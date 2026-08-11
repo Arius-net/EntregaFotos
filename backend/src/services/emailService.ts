@@ -10,12 +10,13 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  connectionTimeout: 5000, // No colgarse más de 5 segundos
 });
 
 export const sendPinEmail = async (to: string, pin: string) => {
   try {
     const info = await transporter.sendMail({
-      from: `"Galería de Fotos" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+      from: process.env.SMTP_FROM || `"Galería de Fotos" <${process.env.SMTP_USER}>`,
       to,
       subject: 'Tu Código de Acceso (PIN) - Galería de Fotos',
       html: `
