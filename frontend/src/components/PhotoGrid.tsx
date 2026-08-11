@@ -18,6 +18,8 @@ interface PhotoGridProps {
 }
 
 export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, clientEmail }: PhotoGridProps) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
+
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [unlockedIds, setUnlockedIds] = useState<Set<number>>(new Set());
   const [isProcessing, setIsProcessing] = useState(false);
@@ -29,7 +31,7 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
 
   const fetchUnlockedPhotos = async () => {
     try {
-      const res = await fetch(`http://127.0.0.1:3001/api/galleries/${galleryId}/unlocked?email=${encodeURIComponent(clientEmail)}`);
+      const res = await fetch(`${API_URL}/api/galleries/${galleryId}/unlocked?email=${encodeURIComponent(clientEmail)}`);
       if (res.ok) {
         const data = await res.json();
         setUnlockedIds(new Set(data.unlockedIds));
@@ -57,7 +59,7 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
     setIsProcessing(true);
     const toastId = toast.loading('Generando URLs de descarga...');
     try {
-      const res = await fetch('http://127.0.0.1:3001/api/downloads/free', {
+      const res = await fetch(`${API_URL}/api/downloads/free`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -102,7 +104,7 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
     const toastId = toast.loading('Creando preferencia de pago...');
     
     try {
-      const res = await fetch('http://127.0.0.1:3001/api/payments/create', {
+      const res = await fetch(`${API_URL}/api/payments/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

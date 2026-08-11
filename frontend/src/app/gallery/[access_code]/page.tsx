@@ -18,6 +18,7 @@ interface Gallery {
 }
 
 export default function GalleryPage({ params }: { params: Promise<{ access_code: string }> }) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
   const unwrappedParams = use(params);
   const [email, setEmail] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -28,7 +29,7 @@ export default function GalleryPage({ params }: { params: Promise<{ access_code:
     // Cargar información de la galería
     const fetchGallery = async () => {
       try {
-        const res = await fetch(`http://127.0.0.1:3001/api/galleries/${unwrappedParams.access_code}`);
+        const res = await fetch(`${API_URL}/api/galleries/${unwrappedParams.access_code}`);
         if (res.ok) {
           const data = await res.json();
           setGallery(data.gallery);
@@ -50,7 +51,7 @@ export default function GalleryPage({ params }: { params: Promise<{ access_code:
     if (!email) return;
 
     try {
-      const res = await fetch(`http://127.0.0.1:3001/api/galleries/${unwrappedParams.access_code}/access`, {
+      const res = await fetch(`${API_URL}/api/galleries/${unwrappedParams.access_code}/access`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })

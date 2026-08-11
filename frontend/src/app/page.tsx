@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 export default function ClientPortal() {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
   const [accessCode, setAccessCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function ClientPortal() {
     
     // Verificamos superficialmente que exista
     try {
-      const res = await fetch(`http://127.0.0.1:3001/api/galleries/${accessCode.toUpperCase()}`);
+      const res = await fetch(`${API_URL}/api/galleries/${accessCode.toUpperCase()}`);
       if (res.ok) {
         router.push(`/gallery/${accessCode.toUpperCase()}`);
       } else {

@@ -7,7 +7,7 @@ import multer from 'multer';
 import { createGallery, getGallery, getGalleriesByPhotographer, getUnlockedPhotos, verifyAccess } from './controllers/galleryController';
 import { uploadPhotos } from './controllers/photoController';
 import { downloadFreePhotos } from './controllers/downloadController';
-import { createPreference, verifyPayment } from './controllers/paymentController';
+import { createPreference, verifyPayment, mpWebhook } from './controllers/paymentController';
 
 // Inicializar tarea cron
 import './cron';
@@ -18,7 +18,10 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL ? process.env.FRONTEND_URL : '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+}));
 app.use(express.json());
 
 // Configuración de Multer (Almacenamiento en memoria para AWS S3/R2)
@@ -45,6 +48,7 @@ app.post('/api/downloads/free', downloadFreePhotos);
 // Rutas de Pagos (Mercado Pago)
 app.post('/api/payments/create', createPreference);
 app.post('/api/payments/verify', verifyPayment);
+app.post('/api/webhooks/mercadopago', mpWebhook);
 
 app.listen(PORT, () => {
   console.log(`Servidor Backend corriendo en http://localhost:${PORT}`);

@@ -15,6 +15,7 @@ interface Gallery {
 }
 
 export default function AdminDashboard() {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
   const [galleryName, setGalleryName] = useState('');
   const [freeLimit, setFreeLimit] = useState(10);
   const [extraPrice, setExtraPrice] = useState(5.00);
@@ -27,6 +28,7 @@ export default function AdminDashboard() {
   
   const [galleries, setGalleries] = useState<Gallery[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
 
   // Estado para la subida de fotos
   const [activeGalleryForUpload, setActiveGalleryForUpload] = useState<Gallery | null>(null);
@@ -42,7 +44,7 @@ export default function AdminDashboard() {
 
   const fetchGalleries = async () => {
     try {
-      const res = await fetch(`http://127.0.0.1:3001/api/photographers/${PHOTOGRAPHER_ID}/galleries`);
+      const res = await fetch(`${API_URL}/api/photographers/${PHOTOGRAPHER_ID}/galleries`);
       if (res.ok) {
         const data = await res.json();
         setGalleries(data.galleries);
@@ -57,9 +59,10 @@ export default function AdminDashboard() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     const loadingToast = toast.loading('Creando galería...');
+    setIsCreating(true);
     
     try {
-      const res = await fetch('http://127.0.0.1:3001/api/galleries', {
+      const res = await fetch(`${API_URL}/api/galleries`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -85,6 +88,8 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       toast.error('Error de conexión', { id: loadingToast });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -103,7 +108,7 @@ export default function AdminDashboard() {
     });
 
     try {
-      const res = await fetch('http://127.0.0.1:3001/api/photos/upload', {
+      const res = await fetch(`${API_URL}/api/photos/upload`, {
         method: 'POST',
         body: formData,
       });

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 
 export default function PaymentSuccessPage({ params }: { params: Promise<{ access_code: string }> }) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
   const unwrappedParams = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -22,7 +23,7 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ acces
 
     const verifyPayment = async () => {
       try {
-        const res = await fetch('http://127.0.0.1:3001/api/payments/verify', {
+        const res = await fetch(`${API_URL}/api/payments/verify`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ payment_id, preference_id })

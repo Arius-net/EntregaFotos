@@ -48,26 +48,33 @@ export const createPreference = async (req: Request, res: Response) => {
 
     // 2. Crear Preferencia en Mercado Pago
     const preference = new Preference(mpClient);
-    const prefResponse = await preference.create({
-      body: {
-        items: [
-          {
-            id: 'fotos_extra',
-            title: `Fotos Extra - ${gallery.name}`,
-            quantity: extraPhotos,
-            unit_price: Number(gallery.extra_photo_price)
-          }
-        ],
-        back_urls: {
-          success: `http://localhost:3000/gallery/${gallery.access_code}/success`,
-          failure: `http://localhost:3000/gallery/${gallery.access_code}`,
-          pending: `http://localhost:3000/gallery/${gallery.access_code}`
-        },
-        metadata: {
-          transaction_id: transaction.id
+    const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const BACKEND_URL = process.env.BACKEND_URL;
+
+    const prefBody: any = {
+      items: [
+        {
+          id: 'fotos_extra',
+          title: `Fotos Extra - ${gallery.name}`,
+          quantity: extraPhotos,
+          unit_price: Number(gallery.extra_photo_price)
         }
+      ],
+      back_urls: {
+        success: `${FRONTEND_URL}/gallery/${gallery.access_code}/success`,
+        failure: `${FRONTEND_URL}/gallery/${gallery.access_code}`,
+        pending: `${FRONTEND_URL}/gallery/${gallery.access_code}`
+      },
+      metadata: {
+        transaction_id: transaction.id
       }
-    });
+    };
+
+    if (BACKEND_URL) {
+      prefBody.notification_url = `${BACKEND_URL}/api/webhooks/mercadopago`;
+    }
+
+    const prefResponse = await preference.create({ body: prefBody });
 
     // Actualizar transacción con el ID de preferencia real
     await prisma.transaction.update({
@@ -140,5 +147,42 @@ export const verifyPayment = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error verifying payment:', error);
     res.status(500).json({ error: 'Error verifying payment' });
+  }
+};
+
+export const mpWebhook = async (req: Request, res: Response) => {
+  try {
+    const { type, data } = req.body;
+    
+    // MercadoPago envia type='payment' y data.id
+    if (type === 'payment' && data && data.id) {
+      const paymentClient = new Payment(mpClient);
+      const payment = await paymentClient.get({ id: data.id });
+
+      if (payment.status === 'approved') {
+        const transaction_id = payment.metadata?.transaction_id;
+        
+        if (transaction_id) {
+          const transaction = await prisma.transaction.findUnique({
+            where: { id: parseInt(transaction_id) }
+          });
+
+          // Solo actualizamos si sigue pendiente
+          if (transaction && transaction.status === 'pending') {
+            await prisma.transaction.update({
+              where: { id: parseInt(transaction_id) },
+              data: { status: 'completed', mp_payment_id: payment.id?.toString() }
+            });
+            console.log(`[Webhook] Transacción ${transaction_id} completada.`);
+          }
+        }
+      }
+    }
+
+    // Siempre responder 200 a MercadoPago para que no siga insistiendo
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('Error procesando webhook:', error);
+    res.status(500).send('Error');
   }
 };
