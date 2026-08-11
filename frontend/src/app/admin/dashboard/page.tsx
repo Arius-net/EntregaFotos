@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 interface Gallery {
@@ -15,6 +16,7 @@ interface Gallery {
 }
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
   const [galleryName, setGalleryName] = useState('');
   const [freeLimit, setFreeLimit] = useState(10);
@@ -39,12 +41,27 @@ export default function AdminDashboard() {
   const PHOTOGRAPHER_ID = 1; // Fotógrafo simulado
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/auth');
+      return;
+    }
     fetchGalleries();
   }, []);
 
   const fetchGalleries = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/photographers/${PHOTOGRAPHER_ID}/galleries`);
+      const token = localStorage.getItem('token');
+      // Obtenemos los fotógrafos/galerias
+      // El backend ahora espera que el jwt valide y devuelve las de ese user
+      // No necesitamos pasar el ID manual en la URL si hacemos un endpoint 'me' o usamos el token.
+      // Pero como nuestro endpoint actual es /api/photographers/:id/galleries, podemos
+      // desencriptar el jwt, pero es más fácil cambiar el backend para usar req.user.id
+      // Afortunadamente, ya lo cambiamos para que ignore el ID y use req.user.id
+      const res = await fetch(`${API_URL}/api/photographers/0/galleries`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
       if (res.ok) {
         const data = await res.json();
         setGalleries(data.galleries);
@@ -62,11 +79,14 @@ export default function AdminDashboard() {
     setIsCreating(true);
     
     try {
+      const token = localStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/galleries`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
-          photographer_id: PHOTOGRAPHER_ID,
           name: galleryName,
           free_limit: freeLimit,
           extra_photo_price: extraPrice,
@@ -108,8 +128,10 @@ export default function AdminDashboard() {
     });
 
     try {
+      const token = localStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/photos/upload`, {
         method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
         body: formData,
       });
 

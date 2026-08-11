@@ -5,7 +5,7 @@ import { generateSecureDownloadUrl } from '../services/storage';
 export const createGallery = async (req: Request, res: Response) => {
   try {
     const { photographer_id, name, free_limit, extra_photo_price, expires_at, max_clients_allowed } = req.body;
-    
+
     const access_code = Math.random().toString(36).substring(2, 8).toUpperCase();
 
     const gallery = await prisma.gallery.create({
@@ -64,7 +64,7 @@ export const getGallery = async (req: Request, res: Response) => {
       })
     );
 
-    res.status(200).json({ 
+    res.status(200).json({
       gallery: {
         ...gallery,
         photos: photosWithSignedUrls
@@ -171,7 +171,7 @@ export const verifyAccess = async (req: Request, res: Response) => {
 export const getGalleriesByPhotographer = async (req: Request, res: Response) => {
   try {
     const photographer_id = parseInt(req.params.id as string);
-    
+
     const galleries = await prisma.gallery.findMany({
       where: { photographer_id },
       orderBy: { id: 'desc' },

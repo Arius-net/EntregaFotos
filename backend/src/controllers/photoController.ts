@@ -17,7 +17,7 @@ export const uploadPhotos = async (req: Request, res: Response) => {
 
     for (const file of files) {
       const uniqueId = Date.now().toString() + Math.floor(Math.random() * 1000);
-      
+
       const highResKey = `galleries/${gallery_id}/highres/${uniqueId}-${file.originalname}`;
       const thumbnailKey = `galleries/${gallery_id}/thumbnails/thumb-${uniqueId}.webp`;
 

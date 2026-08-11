@@ -27,7 +27,7 @@ app.use(express.json());
 // Configuración de Multer (Almacenamiento en memoria para AWS S3/R2)
 // Límite de 50MB
 const storage = multer.memoryStorage();
-const upload = multer({ 
+const upload = multer({
   storage,
   limits: { fileSize: 50 * 1024 * 1024 }
 });
