@@ -11,6 +11,7 @@ const transporter = nodemailer.createTransport({
     pass: process.env.SMTP_PASS,
   },
   connectionTimeout: 5000, // No colgarse más de 5 segundos
+  family: 4, // Forzar uso de IPv4 para evitar el error ENETUNREACH en Railway
 });
 
 export const sendPinEmail = async (to: string, pin: string) => {
