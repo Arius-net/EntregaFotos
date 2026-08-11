@@ -114,8 +114,8 @@ export const getUnlockedPhotos = async (req: Request, res: Response) => {
 
 export const verifyAccess = async (req: Request, res: Response) => {
   try {
-    const { access_code } = req.params;
-    const { email } = req.body;
+    const access_code = req.params.access_code as string;
+    const email = req.body.email as string;
 
     if (!email) return res.status(400).json({ error: 'El correo es requerido' });
 
