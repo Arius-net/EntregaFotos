@@ -60,25 +60,9 @@ export default function AuthPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 dark:bg-black p-4">
       <div className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl shadow-xl overflow-hidden border border-zinc-200 dark:border-zinc-800">
         
-        {/* Selector Fotógrafo/Cliente */}
-        <div className="flex w-full">
-          <button
-            onClick={() => setRole('photographer')}
-            className={`flex-1 py-4 text-sm font-semibold transition-colors ${role === 'photographer' ? 'bg-indigo-600 text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'}`}
-          >
-            Soy Fotógrafo
-          </button>
-          <button
-            onClick={() => setRole('client')}
-            className={`flex-1 py-4 text-sm font-semibold transition-colors ${role === 'client' ? 'bg-indigo-600 text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300'}`}
-          >
-            Soy Cliente
-          </button>
-        </div>
-
         <div className="p-8">
           <h2 className="text-2xl font-bold text-center text-zinc-800 dark:text-zinc-100 mb-8">
-            {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'} de {role === 'photographer' ? 'Fotógrafo' : 'Cliente'}
+            {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-6">
