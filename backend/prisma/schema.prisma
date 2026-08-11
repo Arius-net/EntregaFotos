@@ -16,6 +16,7 @@ model Photographer {
 
 model Client {
   id              Int             @id @default(autoincrement())
+  name            String?
   email           String          @unique
   password_hash   String?
   otp_code        String?

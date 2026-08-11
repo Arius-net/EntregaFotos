@@ -8,33 +8,37 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secret_key_123';
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password, role, name } = req.body;
     if (!email || !password || !role) {
       return res.status(400).json({ error: 'Faltan campos requeridos' });
     }
 
-    const password_hash = await bcrypt.hash(password, 10);
-
     if (role === 'photographer') {
-      const exists = await prisma.photographer.findUnique({ where: { email } });
-      if (exists) return res.status(400).json({ error: 'El fotógrafo ya existe' });
-
-      const user = await prisma.photographer.create({ data: { email, password_hash } });
-      return res.status(201).json({ message: 'Fotógrafo registrado', id: user.id });
+      // El registro de fotógrafos está deshabilitado públicamente
+      // Solo el fotógrafo pre-creado (Admin) puede iniciar sesión.
+      return res.status(403).json({ error: 'El registro de fotógrafos está deshabilitado.' });
     } else if (role === 'client') {
-      let client = await prisma.client.findUnique({ where: { email } });
-      if (client) {
-        if (client.password_hash) return res.status(400).json({ error: 'El cliente ya tiene cuenta' });
-        client = await prisma.client.update({ where: { id: client.id }, data: { password_hash } });
-      } else {
-        client = await prisma.client.create({ data: { email, password_hash } });
+      const existingClient = await prisma.client.findUnique({ where: { email } });
+      if (existingClient && existingClient.password_hash) {
+        return res.status(400).json({ error: 'El cliente ya tiene una cuenta registrada.' });
       }
-      return res.status(201).json({ message: 'Cliente registrado', id: client.id });
+
+      const salt = await bcrypt.genSalt(10);
+      const password_hash = await bcrypt.hash(password, salt);
+
+      const client = await prisma.client.upsert({
+        where: { email },
+        update: { password_hash, name: name || null },
+        create: { email, password_hash, name: name || null },
+      });
+
+      const token = jwt.sign({ id: client.id, role: 'client' }, JWT_SECRET, { expiresIn: '7d' });
+      return res.status(201).json({ token, user: { id: client.id, email: client.email, role } });
     }
     
     return res.status(400).json({ error: 'Rol inválido' });
   } catch (error) {
-    console.error('Error en register:', error);
+    console.error('Error en registro:', error);
     res.status(500).json({ error: 'Error interno', details: error instanceof Error ? error.message : 'Unknown error' });
   }
 };
