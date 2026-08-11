@@ -1,24 +1,14 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-// Configuración del transporter usando variables de entorno
-// Se usa SMTP genérico para que funcione con cualquier proveedor (Gmail, Resend, SendGrid, Hostinger, etc.)
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: process.env.SMTP_SECURE === 'true', // true para puerto 465, false para otros puertos (587, 25)
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-  connectionTimeout: 5000, // No colgarse más de 5 segundos
-  family: 4, // Forzar uso de IPv4 para evitar el error ENETUNREACH en Railway
-} as any);
+// Usa la variable de entorno obligatoriamente por seguridad
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendPinEmail = async (to: string, pin: string) => {
   try {
-    const info = await transporter.sendMail({
-      from: process.env.SMTP_FROM || `"Galería de Fotos" <${process.env.SMTP_USER}>`,
-      to,
+    const { data, error } = await resend.emails.send({
+      // Resend requiere que uses su correo de onboarding si no has verificado tu dominio
+      from: 'Acme <onboarding@resend.dev>',
+      to: [to],
       subject: 'Tu Código de Acceso (PIN) - Galería de Fotos',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; background-color: #f9f9f9;">
@@ -39,10 +29,16 @@ export const sendPinEmail = async (to: string, pin: string) => {
         </div>
       `,
     });
-    console.log(`[EmailService] PIN enviado a ${to}. MessageId: ${info.messageId}`);
+
+    if (error) {
+      console.error('[EmailService] Error de Resend:', error);
+      return false;
+    }
+
+    console.log(`[EmailService] PIN enviado a ${to}. ID: ${data?.id}`);
     return true;
   } catch (error) {
-    console.error('[EmailService] Error enviando correo:', error);
+    console.error('[EmailService] Excepción enviando correo:', error);
     return false;
   }
 };
