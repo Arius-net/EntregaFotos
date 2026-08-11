@@ -32,15 +32,22 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 }
 });
 
+import { login, register } from './controllers/authController';
+import { authenticateJWT } from './middlewares/authMiddleware';
+
+// Rutas de Auth
+app.post('/api/auth/register', register);
+app.post('/api/auth/login', login);
+
 // Rutas de Galerías
-app.post('/api/galleries', createGallery);
+app.post('/api/galleries', authenticateJWT, createGallery);
 app.get('/api/galleries/:access_code', getGallery);
 app.get('/api/galleries/:id/unlocked', getUnlockedPhotos);
-app.get('/api/photographers/:id/galleries', getGalleriesByPhotographer);
+app.get('/api/photographers/:id/galleries', authenticateJWT, getGalleriesByPhotographer);
 app.post('/api/galleries/:access_code/access', verifyAccess);
 
 // Rutas de Fotos (Requiere multipart/form-data)
-app.post('/api/photos/upload', upload.array('photos', 50), uploadPhotos);
+app.post('/api/photos/upload', authenticateJWT, upload.array('photos', 50), uploadPhotos);
 
 // Rutas de Descarga
 app.post('/api/downloads/free', downloadFreePhotos);

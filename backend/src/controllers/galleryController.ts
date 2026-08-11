@@ -4,7 +4,10 @@ import { generateSecureDownloadUrl } from '../services/storage';
 
 export const createGallery = async (req: Request, res: Response) => {
   try {
-    const { photographer_id, name, free_limit, extra_photo_price, expires_at, max_clients_allowed } = req.body;
+    const { name, free_limit, extra_photo_price, expires_at, max_clients_allowed } = req.body;
+    const photographer_id = (req as any).user?.id;
+
+    if (!photographer_id) return res.status(401).json({ error: 'No autorizado' });
 
     const access_code = Math.random().toString(36).substring(2, 8).toUpperCase();
 
@@ -170,7 +173,8 @@ export const verifyAccess = async (req: Request, res: Response) => {
 
 export const getGalleriesByPhotographer = async (req: Request, res: Response) => {
   try {
-    const photographer_id = parseInt(req.params.id as string);
+    const photographer_id = (req as any).user?.id;
+    if (!photographer_id) return res.status(401).json({ error: 'No autorizado' });
 
     const galleries = await prisma.gallery.findMany({
       where: { photographer_id },
