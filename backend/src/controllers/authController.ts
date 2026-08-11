@@ -100,8 +100,8 @@ export const requestClientPin = async (req: Request, res: Response) => {
       data: { otp_code: pin, otp_expires_at: expiresAt }
     });
 
-    // Enviar correo de verdad si está configurado el SMTP, sino simular
-    if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+    // Enviar correo de verdad si está configurado Resend, sino simular
+    if (process.env.RESEND_API_KEY) {
       const sent = await sendPinEmail(email, pin);
       if (!sent) {
         console.error('No se pudo enviar el correo a', email);
