@@ -6,8 +6,8 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export const sendPinEmail = async (to: string, pin: string) => {
   try {
     const { data, error } = await resend.emails.send({
-      // Resend requiere que uses su correo de onboarding si no has verificado tu dominio
-      from: 'Acme <onboarding@resend.dev>',
+      // Ahora usamos el remitente real configurado en las variables de entorno
+      from: process.env.SMTP_FROM || 'Galería <no-reply@tudominio.com>',
       to: [to],
       subject: 'Tu Código de Acceso (PIN) - Galería de Fotos',
       html: `
