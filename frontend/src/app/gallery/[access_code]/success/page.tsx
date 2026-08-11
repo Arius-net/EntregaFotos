@@ -23,9 +23,13 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ acces
 
     const verifyPayment = async () => {
       try {
+        const token = localStorage.getItem('client_token');
         const res = await fetch(`${API_URL}/api/payments/verify`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
           body: JSON.stringify({ payment_id, preference_id })
         });
 
