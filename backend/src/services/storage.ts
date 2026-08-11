@@ -35,13 +35,25 @@ export const generateSecureDownloadUrl = async (key: string, forceDownload: bool
   return await getSignedUrl(s3Client, command, { expiresIn: 900 });
 };
 
-// Utilidad extra para el cron job
-import { DeleteObjectCommand } from '@aws-sdk/client-s3';
+// Utilidad extra para el cron job y borrado de galerías
+import { DeleteObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 
 export const deleteFile = async (key: string) => {
   const command = new DeleteObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
+  });
+  await s3Client.send(command);
+};
+
+export const deleteFilesBatch = async (keys: string[]) => {
+  if (keys.length === 0) return;
+  const command = new DeleteObjectsCommand({
+    Bucket: BUCKET_NAME,
+    Delete: {
+      Objects: keys.map(key => ({ Key: key })),
+      Quiet: true
+    }
   });
   await s3Client.send(command);
 };

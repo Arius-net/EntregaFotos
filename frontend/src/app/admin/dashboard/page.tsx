@@ -10,6 +10,8 @@ interface Gallery {
   access_code: string;
   free_limit: number;
   extra_photo_price: number;
+  max_clients_allowed?: number;
+  expires_at?: string;
   _count?: {
     photos: number;
   };
@@ -31,6 +33,7 @@ export default function AdminDashboard() {
   const [galleries, setGalleries] = useState<Gallery[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   // Estado para la subida de fotos
   const [activeGalleryForUpload, setActiveGalleryForUpload] = useState<Gallery | null>(null);
@@ -73,15 +76,17 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleCreateOrUpdateGallery = async (e: React.FormEvent) => {
     e.preventDefault();
-    const loadingToast = toast.loading('Creando galería...');
     setIsCreating(true);
     
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${API_URL}/api/galleries`, {
-        method: 'POST',
+      const method = editingId ? 'PUT' : 'POST';
+      const url = editingId ? `${API_URL}/api/galleries/${editingId}` : `${API_URL}/api/galleries`;
+
+      const res = await fetch(url, {
+        method,
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -97,19 +102,53 @@ export default function AdminDashboard() {
 
       if (res.ok) {
         const data = await res.json();
-        toast.success(`Galería creada. Código: ${data.gallery.access_code}`, { id: loadingToast, duration: 5000 });
+        toast.success(editingId ? 'Galería actualizada' : `Galería creada. Código: ${data.gallery?.access_code}`);
         setGalleryName('');
+        setEditingId(null);
         fetchGalleries();
         
-        // Automáticamente ofrecer subir fotos a la nueva galería
-        setActiveGalleryForUpload(data.gallery);
+        if (!editingId && data.gallery) {
+          setActiveGalleryForUpload(data.gallery);
+        }
       } else {
-        toast.error('Error al crear la galería', { id: loadingToast });
+        toast.error('Error al guardar la galería');
+      }
+    } catch (error) {
+      toast.error('Error de conexión');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleEditClick = (gallery: Gallery) => {
+    setEditingId(gallery.id);
+    setGalleryName(gallery.name);
+    setFreeLimit(gallery.free_limit);
+    setExtraPrice(gallery.extra_photo_price);
+    if (gallery.max_clients_allowed !== undefined) setMaxClients(gallery.max_clients_allowed);
+    if (gallery.expires_at) setExpiresAt(gallery.expires_at.split('T')[0]);
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDeleteGallery = async (id: number) => {
+    if (!confirm('¿Estás seguro de eliminar esta galería? Esto borrará todas las fotos y no se puede deshacer.')) return;
+    
+    const loadingToast = toast.loading('Eliminando galería...');
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/galleries/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        toast.success('Galería eliminada', { id: loadingToast });
+        fetchGalleries();
+      } else {
+        toast.error('Error al eliminar', { id: loadingToast });
       }
     } catch (error) {
       toast.error('Error de conexión', { id: loadingToast });
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -219,8 +258,8 @@ export default function AdminDashboard() {
               </div>
             ) : (
               <div className="bg-gray-900 rounded-2xl shadow-xl p-6 border border-gray-800 sticky top-8">
-                <h2 className="text-xl font-semibold mb-6">Nueva Galería</h2>
-                <form onSubmit={handleCreate} className="space-y-5">
+                <h2 className="text-xl font-semibold mb-6">{editingId ? 'Editar Galería' : 'Nueva Galería'}</h2>
+                <form onSubmit={handleCreateOrUpdateGallery} className="space-y-5">
                   <div className="space-y-1.5">
                     <label className="text-sm text-gray-400 font-medium">Nombre</label>
                     <input 
@@ -284,9 +323,10 @@ export default function AdminDashboard() {
 
                   <button 
                     type="submit" 
-                    className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 px-4 rounded-xl shadow-lg transition-all active:scale-95"
+                    disabled={isCreating}
+                    className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 px-4 rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50"
                   >
-                    Crear Galería
+                    {isCreating ? 'Guardando...' : (editingId ? 'Actualizar Galería' : 'Crear Galería')}
                   </button>
                 </form>
               </div>
@@ -330,21 +370,33 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       <a 
                         href={`/gallery/${gallery.access_code}`} 
                         target="_blank"
                         className="flex-1 bg-gray-800 hover:bg-gray-700 text-center text-sm py-2 rounded-lg transition-colors border border-gray-700"
                       >
-                        Ver Cliente
+                        Ver
                       </a>
                       <button 
-                        onClick={() => setActiveGalleryForUpload(gallery)}
-                        className="flex-1 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 text-center text-sm py-2 rounded-lg transition-colors border border-blue-500/20"
+                        onClick={() => handleEditClick(gallery)}
+                        className="flex-1 bg-amber-600/10 hover:bg-amber-600/20 text-amber-500 text-center text-sm py-2 rounded-lg transition-colors border border-amber-500/20"
                       >
-                        Subir Fotos
+                        Editar
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteGallery(gallery.id)}
+                        className="flex-1 bg-red-600/10 hover:bg-red-600/20 text-red-500 text-center text-sm py-2 rounded-lg transition-colors border border-red-500/20"
+                      >
+                        Borrar
                       </button>
                     </div>
+                    <button 
+                      onClick={() => setActiveGalleryForUpload(gallery)}
+                      className="w-full mt-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 text-center text-sm py-2 rounded-lg transition-colors border border-blue-500/20"
+                    >
+                      Subir Fotos
+                    </button>
                   </div>
                 ))}
               </div>

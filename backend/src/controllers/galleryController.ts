@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../prismaClient';
-import { generateSecureDownloadUrl } from '../services/storage';
+import { generateSecureDownloadUrl, deleteFilesBatch } from '../services/storage';
 
 export const createGallery = async (req: Request, res: Response) => {
   try {
@@ -167,7 +167,80 @@ export const verifyAccess = async (req: Request, res: Response) => {
     res.status(200).json({ success: true, message: 'Acceso concedido por primera vez' });
   } catch (error) {
     console.error('Error verifying access:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    res.status(500).json({ error: 'Error verifying access' });
+  }
+};
+
+export const updateGallery = async (req: Request, res: Response) => {
+  try {
+    const galleryId = parseInt(req.params.id as string);
+    const photographer_id = (req as any).user?.id;
+    if (!photographer_id) return res.status(401).json({ error: 'No autorizado' });
+
+    const { name, free_limit, extra_photo_price, expires_at, max_clients_allowed } = req.body;
+
+    const gallery = await prisma.gallery.findUnique({ where: { id: galleryId } });
+    if (!gallery || gallery.photographer_id !== photographer_id) {
+      return res.status(404).json({ error: 'Galería no encontrada o no te pertenece' });
+    }
+
+    const updated = await prisma.gallery.update({
+      where: { id: galleryId },
+      data: {
+        name,
+        free_limit: parseInt(free_limit),
+        extra_photo_price: parseFloat(extra_photo_price),
+        expires_at: new Date(expires_at),
+        max_clients_allowed: max_clients_allowed ? parseInt(max_clients_allowed) : 0
+      }
+    });
+
+    res.status(200).json({ message: 'Galería actualizada', gallery: updated });
+  } catch (error) {
+    console.error('Error updating gallery:', error);
+    res.status(500).json({ error: 'Error interno' });
+  }
+};
+
+export const deleteGallery = async (req: Request, res: Response) => {
+  try {
+    const galleryId = parseInt(req.params.id as string);
+    const photographer_id = (req as any).user?.id;
+    if (!photographer_id) return res.status(401).json({ error: 'No autorizado' });
+
+    const gallery = await prisma.gallery.findUnique({ 
+      where: { id: galleryId },
+      include: { photos: true }
+    });
+
+    if (!gallery || gallery.photographer_id !== photographer_id) {
+      return res.status(404).json({ error: 'Galería no encontrada o no te pertenece' });
+    }
+
+    // Recopilar keys de R2
+    const keysToDelete: string[] = [];
+    for (const photo of gallery.photos) {
+      keysToDelete.push(photo.high_res_key);
+      let thumbKey = photo.thumbnail_url;
+      if (thumbKey.includes('pub-your-public-r2-url.r2.dev/')) {
+        thumbKey = thumbKey.split('.dev/')[1];
+      }
+      keysToDelete.push(thumbKey);
+    }
+
+    // Borrar en R2 en lotes (hasta 1000 a la vez)
+    // S3 DeleteObjects soporta max 1000
+    for (let i = 0; i < keysToDelete.length; i += 1000) {
+      await deleteFilesBatch(keysToDelete.slice(i, i + 1000));
+    }
+
+    // Borrar de BD (Esto borra en cascada fotos, accesos, etc.)
+    await prisma.gallery.delete({ where: { id: galleryId } });
+
+    res.status(200).json({ message: 'Galería y fotos eliminadas exitosamente' });
+  } catch (error) {
+    console.error('Error deleting gallery:', error);
+    res.status(500).json({ error: 'Error interno al eliminar galería' });
   }
 };
 

@@ -4,10 +4,12 @@ import dotenv from 'dotenv';
 import multer from 'multer';
 
 // Importar controladores
-import { createGallery, getGallery, getGalleriesByPhotographer, getUnlockedPhotos, verifyAccess } from './controllers/galleryController';
+import { createGallery, updateGallery, deleteGallery, getGallery, getGalleriesByPhotographer, getUnlockedPhotos, verifyAccess } from './controllers/galleryController';
 import { uploadPhotos } from './controllers/photoController';
 import { downloadFreePhotos } from './controllers/downloadController';
 import { createPreference, verifyPayment, mpWebhook } from './controllers/paymentController';
+import { login, register } from './controllers/authController';
+import { authenticateJWT } from './middlewares/authMiddleware';
 
 // Inicializar tarea cron
 import './cron';
@@ -32,15 +34,14 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 }
 });
 
-import { login, register } from './controllers/authController';
-import { authenticateJWT } from './middlewares/authMiddleware';
-
 // Rutas de Auth
 app.post('/api/auth/register', register);
 app.post('/api/auth/login', login);
 
 // Rutas de Galerías
 app.post('/api/galleries', authenticateJWT, createGallery);
+app.put('/api/galleries/:id', authenticateJWT, updateGallery);
+app.delete('/api/galleries/:id', authenticateJWT, deleteGallery);
 app.get('/api/galleries/:access_code', getGallery);
 app.get('/api/galleries/:id/unlocked', getUnlockedPhotos);
 app.get('/api/photographers/:id/galleries', authenticateJWT, getGalleriesByPhotographer);
