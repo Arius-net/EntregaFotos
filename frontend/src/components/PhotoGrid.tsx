@@ -31,7 +31,10 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
 
   const fetchUnlockedPhotos = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/galleries/${galleryId}/unlocked?email=${encodeURIComponent(clientEmail)}`);
+      const token = localStorage.getItem('client_token');
+      const res = await fetch(`${API_URL}/api/galleries/${galleryId}/unlocked`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       if (res.ok) {
         const data = await res.json();
         setUnlockedIds(new Set(data.unlockedIds));
@@ -59,11 +62,14 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
     setIsProcessing(true);
     const toastId = toast.loading('Generando URLs de descarga...');
     try {
+      const token = localStorage.getItem('client_token');
       const res = await fetch(`${API_URL}/api/downloads/free`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
-          client_email: clientEmail,
           gallery_id: galleryId,
           selected_photo_ids: Array.from(selectedIds)
         })
@@ -101,14 +107,17 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
 
   const handlePay = async () => {
     setIsProcessing(true);
-    const toastId = toast.loading('Creando preferencia de pago...');
+    const toastId = toast.loading('Preparando pago seguro...');
     
     try {
+      const token = localStorage.getItem('client_token');
       const res = await fetch(`${API_URL}/api/payments/create`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
-          client_email: clientEmail,
           gallery_id: galleryId,
           selected_photo_ids: Array.from(selectedIds)
         })

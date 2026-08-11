@@ -7,15 +7,16 @@ const mpClient = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKE
 
 export const createPreference = async (req: Request, res: Response) => {
   try {
-    const { client_email, gallery_id, selected_photo_ids } = req.body;
+    const { gallery_id, selected_photo_ids } = req.body;
+    const client_id = (req as any).user?.id;
+
+    if (!client_id) return res.status(401).json({ error: 'No autorizado' });
 
     const gallery = await prisma.gallery.findUnique({ where: { id: parseInt(gallery_id) } });
     if (!gallery) return res.status(404).json({ error: 'Gallery not found' });
 
-    let client = await prisma.client.findUnique({ where: { email: client_email } });
-    if (!client) {
-      client = await prisma.client.create({ data: { email: client_email } });
-    }
+    let client = await prisma.client.findUnique({ where: { id: client_id } });
+    if (!client) return res.status(404).json({ error: 'Cliente no encontrado' });
 
     const alreadyUnlockedPhotos = await prisma.unlockedPhoto.findMany({
       where: {

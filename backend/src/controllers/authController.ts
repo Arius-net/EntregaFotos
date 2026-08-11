@@ -72,3 +72,80 @@ export const login = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Error interno', details: error instanceof Error ? error.message : 'Unknown error' });
   }
 };
+
+// Genera un PIN aleatorio de 4 dígitos
+const generatePin = () => Math.floor(1000 + Math.random() * 9000).toString();
+
+export const requestClientPin = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'El correo es requerido' });
+
+    let client = await prisma.client.findUnique({ where: { email } });
+    if (!client) {
+      client = await prisma.client.create({ data: { email } });
+    }
+
+    const pin = generatePin();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 15); // Expira en 15 minutos
+
+    await prisma.client.update({
+      where: { email },
+      data: { otp_code: pin, otp_expires_at: expiresAt }
+    });
+
+    // Enviar correo (En producción usar Resend o Nodemailer)
+    // Por ahora lo imprimimos en consola para testing
+    console.log(`\n========================================`);
+    console.log(`🔐 PIN PARA CLIENTE: ${pin}`);
+    console.log(`✉️ ENVIADO A: ${email}`);
+    console.log(`========================================\n`);
+
+    // Intentar simular un pequeño delay de envío de correo
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    res.status(200).json({ message: 'PIN enviado al correo' });
+  } catch (error) {
+    console.error('Error requesting pin:', error);
+    res.status(500).json({ error: 'Error al solicitar PIN' });
+  }
+};
+
+export const verifyClientPin = async (req: Request, res: Response) => {
+  try {
+    const { email, pin } = req.body;
+    if (!email || !pin) return res.status(400).json({ error: 'Correo y PIN requeridos' });
+
+    const client = await prisma.client.findUnique({ where: { email } });
+    
+    if (!client || !client.otp_code || client.otp_code !== pin) {
+      return res.status(401).json({ error: 'PIN incorrecto' });
+    }
+
+    if (client.otp_expires_at && new Date() > client.otp_expires_at) {
+      return res.status(401).json({ error: 'El PIN ha expirado, solicita uno nuevo' });
+    }
+
+    // PIN válido, limpiar OTP y generar JWT
+    await prisma.client.update({
+      where: { email },
+      data: { otp_code: null, otp_expires_at: null }
+    });
+
+    const token = jwt.sign(
+      { id: client.id, email: client.email, role: 'client' },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    res.status(200).json({
+      message: 'Autenticación exitosa',
+      token,
+      client: { id: client.id, email: client.email }
+    });
+  } catch (error) {
+    console.error('Error verifying pin:', error);
+    res.status(500).json({ error: 'Error al verificar PIN' });
+  }
+};

@@ -82,13 +82,13 @@ export const getGallery = async (req: Request, res: Response) => {
 export const getUnlockedPhotos = async (req: Request, res: Response) => {
   try {
     const gallery_id = parseInt(req.params.id as string);
-    const email = req.query.email as string;
+    const client_id = (req as any).user?.id;
 
-    if (!email) {
-      return res.status(400).json({ error: 'Email requerido' });
+    if (!client_id) {
+      return res.status(401).json({ error: 'No autorizado' });
     }
 
-    const client = await prisma.client.findUnique({ where: { email } });
+    const client = await prisma.client.findUnique({ where: { id: client_id } });
     if (!client) {
       return res.status(200).json({ unlockedIds: [] });
     }
@@ -118,18 +118,15 @@ export const getUnlockedPhotos = async (req: Request, res: Response) => {
 export const verifyAccess = async (req: Request, res: Response) => {
   try {
     const access_code = req.params.access_code as string;
-    const email = req.body.email as string;
+    const client_id = (req as any).user?.id;
 
-    if (!email) return res.status(400).json({ error: 'El correo es requerido' });
+    if (!client_id) return res.status(401).json({ error: 'Debes iniciar sesión con tu PIN' });
 
     const gallery = await prisma.gallery.findUnique({ where: { access_code } });
     if (!gallery) return res.status(404).json({ error: 'Galería no encontrada' });
 
-    // Buscar o crear cliente
-    let client = await prisma.client.findUnique({ where: { email } });
-    if (!client) {
-      client = await prisma.client.create({ data: { email } });
-    }
+    const client = await prisma.client.findUnique({ where: { id: client_id } });
+    if (!client) return res.status(404).json({ error: 'Cliente no encontrado' });
 
     // Si la galería no tiene límite, registrar acceso (si no existe) y permitir
     if (gallery.max_clients_allowed === 0) {

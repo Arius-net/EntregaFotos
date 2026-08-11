@@ -21,6 +21,8 @@ export default function GalleryPage({ params }: { params: Promise<{ access_code:
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
   const unwrappedParams = use(params);
   const [email, setEmail] = useState('');
+  const [pin, setPin] = useState('');
+  const [step, setStep] = useState<'email' | 'pin'>('email');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [gallery, setGallery] = useState<Gallery | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,12 +48,42 @@ export default function GalleryPage({ params }: { params: Promise<{ access_code:
     fetchGallery();
   }, [unwrappedParams.access_code]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  useEffect(() => {
+    // Si ya hay token, intentar verificar acceso directamente
+    const token = localStorage.getItem('client_token');
+    if (token) {
+      verifyGalleryAccess(token);
+    }
+  }, []);
+
+  const verifyGalleryAccess = async (token: string) => {
+    try {
+      const res = await fetch(`${API_URL}/api/galleries/${unwrappedParams.access_code}/access`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({})
+      });
+      
+      const data = await res.json();
+      if (res.ok) {
+        setIsAuthenticated(true);
+      } else {
+        localStorage.removeItem('client_token'); // Si falla, borrar
+      }
+    } catch (error) {
+      console.error('Error de red al verificar acceso');
+    }
+  };
+
+  const handleRequestPin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
 
     try {
-      const res = await fetch(`${API_URL}/api/galleries/${unwrappedParams.access_code}/access`, {
+      const res = await fetch(`${API_URL}/api/auth/client/request-pin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -59,9 +91,33 @@ export default function GalleryPage({ params }: { params: Promise<{ access_code:
       
       const data = await res.json();
       if (res.ok) {
-        setIsAuthenticated(true);
+        setStep('pin');
       } else {
-        alert(data.error || 'Error verificando acceso');
+        alert(data.error || 'Error solicitando PIN');
+      }
+    } catch (error) {
+      alert('Error de red al solicitar PIN. Intenta de nuevo.');
+    }
+  };
+
+  const handleVerifyPin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !pin) return;
+
+    try {
+      const res = await fetch(`${API_URL}/api/auth/client/verify-pin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, pin })
+      });
+      
+      const data = await res.json();
+      if (res.ok && data.token) {
+        localStorage.setItem('client_token', data.token);
+        // Una vez tenemos el JWT del cliente, verificamos acceso a esta galería
+        await verifyGalleryAccess(data.token);
+      } else {
+        alert(data.error || 'PIN incorrecto o expirado');
       }
     } catch (error) {
       alert('Error de red. Intenta de nuevo.');
@@ -83,26 +139,60 @@ export default function GalleryPage({ params }: { params: Promise<{ access_code:
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">Bienvenido</h1>
             <p className="text-gray-400">Accede a la galería: <span className="text-blue-400 font-mono">{gallery.name}</span></p>
+            {step === 'pin' && (
+              <p className="text-sm text-green-400 mt-4 bg-green-400/10 p-2 rounded-lg">
+                Te enviamos un PIN de 4 dígitos a {email} (Revisa la consola en desarrollo)
+              </p>
+            )}
           </div>
           
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div>
-              <input 
-                type="email" 
-                className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-white placeholder-gray-500 text-center text-lg"
-                placeholder="tu@email.com"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <button 
-              type="submit" 
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-semibold py-4 rounded-xl shadow-lg transition-all hover:scale-105"
-            >
-              Ver mis fotos
-            </button>
-          </form>
+          {step === 'email' ? (
+            <form onSubmit={handleRequestPin} className="space-y-6">
+              <div>
+                <input 
+                  type="email" 
+                  className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-white placeholder-gray-500 text-center text-lg"
+                  placeholder="tu@email.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <button 
+                type="submit" 
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold py-4 rounded-xl shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_25px_rgba(168,85,247,0.5)] transition-all active:scale-95"
+              >
+                Continuar
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyPin} className="space-y-6">
+              <div>
+                <input 
+                  type="text" 
+                  className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-white placeholder-gray-500 text-center text-3xl font-mono tracking-widest"
+                  placeholder="1234"
+                  maxLength={4}
+                  value={pin}
+                  onChange={e => setPin(e.target.value)}
+                  required
+                />
+              </div>
+              <button 
+                type="submit" 
+                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold py-4 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(20,184,166,0.5)] transition-all active:scale-95"
+              >
+                Entrar a la Galería
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep('email')}
+                className="w-full mt-2 text-sm text-gray-500 hover:text-gray-300"
+              >
+                Usar otro correo
+              </button>
+            </form>
+          )}
         </div>
       </div>
     );

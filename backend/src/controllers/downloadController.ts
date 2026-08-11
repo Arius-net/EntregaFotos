@@ -4,13 +4,14 @@ import { generateSecureDownloadUrl } from '../services/storage';
 
 export const downloadFreePhotos = async (req: Request, res: Response) => {
   try {
-    const { client_email, gallery_id, selected_photo_ids } = req.body;
+    const { gallery_id, selected_photo_ids } = req.body;
+    const client_id = (req as any).user?.id;
     
-    // 1. Obtener o crear al cliente
-    let client = await prisma.client.findUnique({ where: { email: client_email } });
-    if (!client) {
-      client = await prisma.client.create({ data: { email: client_email } });
-    }
+    if (!client_id) return res.status(401).json({ error: 'No autorizado' });
+
+    // 1. Obtener al cliente
+    let client = await prisma.client.findUnique({ where: { id: client_id } });
+    if (!client) return res.status(404).json({ error: 'Cliente no encontrado' });
 
     // 2. Obtener galería para verificar el límite gratuito
     const gallery = await prisma.gallery.findUnique({

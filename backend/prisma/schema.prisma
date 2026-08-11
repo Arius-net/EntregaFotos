@@ -18,6 +18,8 @@ model Client {
   id              Int             @id @default(autoincrement())
   email           String          @unique
   password_hash   String?
+  otp_code        String?
+  otp_expires_at  DateTime?
   transactions    Transaction[]
   unlocked_photos UnlockedPhoto[]
   gallery_accesses GalleryAccess[]
