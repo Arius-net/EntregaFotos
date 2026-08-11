@@ -17,6 +17,7 @@ model Photographer {
 model Client {
   id              Int             @id @default(autoincrement())
   email           String          @unique
+  password_hash   String?
   transactions    Transaction[]
   unlocked_photos UnlockedPhoto[]
   gallery_accesses GalleryAccess[]
