@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../prismaClient';
+import { sendPinEmail } from '../services/emailService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret_key_123';
 
@@ -95,15 +96,20 @@ export const requestClientPin = async (req: Request, res: Response) => {
       data: { otp_code: pin, otp_expires_at: expiresAt }
     });
 
-    // Enviar correo (En producción usar Resend o Nodemailer)
-    // Por ahora lo imprimimos en consola para testing
-    console.log(`\n========================================`);
-    console.log(`🔐 PIN PARA CLIENTE: ${pin}`);
-    console.log(`✉️ ENVIADO A: ${email}`);
-    console.log(`========================================\n`);
-
-    // Intentar simular un pequeño delay de envío de correo
-    await new Promise(resolve => setTimeout(resolve, 800));
+    // Enviar correo de verdad si está configurado el SMTP, sino simular
+    if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+      const sent = await sendPinEmail(email, pin);
+      if (!sent) {
+        console.error('No se pudo enviar el correo a', email);
+      }
+    } else {
+      console.log(`\n========================================`);
+      console.log(`🔐 PIN PARA CLIENTE: ${pin}`);
+      console.log(`✉️ ENVIADO A: ${email}`);
+      console.log(`⚠️ (SMTP NO CONFIGURADO - MODO DESARROLLO)`);
+      console.log(`========================================\n`);
+      await new Promise(resolve => setTimeout(resolve, 800));
+    }
 
     res.status(200).json({ message: 'PIN enviado al correo' });
   } catch (error) {
