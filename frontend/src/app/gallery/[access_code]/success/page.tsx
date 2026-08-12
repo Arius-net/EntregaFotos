@@ -34,10 +34,16 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ acces
           body: JSON.stringify({ payment_id, preference_id })
         });
 
-        if (res.ok) {
-          setStatus('¡Pago verificado! Tus fotos se han desbloqueado.');
-          setIsSuccess(true);
-          toast.success('Pago exitoso');
+        if (res.ok || res.status === 202) {
+          if (res.status === 202) {
+            setStatus('Tu pago está siendo procesado por Mercado Pago. Tus fotos se desbloquearán cuando se apruebe.');
+            setIsSuccess(null);
+            toast.info('Pago en proceso');
+          } else {
+            setStatus('¡Pago verificado! Tus fotos se han desbloqueado.');
+            setIsSuccess(true);
+            toast.success('Pago exitoso');
+          }
         } else {
           setStatus('Error al verificar el pago.');
           setIsSuccess(false);

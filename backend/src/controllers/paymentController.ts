@@ -66,9 +66,7 @@ export const createPreference = async (req: Request, res: Response) => {
         failure: `${FRONTEND_URL}/gallery/${gallery.access_code}`,
         pending: `${FRONTEND_URL}/gallery/${gallery.access_code}`
       },
-      metadata: {
-        transaction_id: transaction.id
-      }
+      external_reference: transaction.id.toString()
     };
 
     if (BACKEND_URL) {
@@ -129,11 +127,15 @@ export const verifyPayment = async (req: Request, res: Response) => {
     const paymentClient = new Payment(mpClient);
     const payment = await paymentClient.get({ id: payment_id });
 
+    if (payment.status === 'in_process' || payment.status === 'pending') {
+      return res.status(202).json({ message: 'Pago en proceso' });
+    }
+
     if (payment.status !== 'approved') {
       return res.status(400).json({ error: 'El pago no está aprobado' });
     }
 
-    const transaction_id = payment.metadata?.transaction_id;
+    const transaction_id = payment.external_reference || payment.metadata?.transaction_id;
     if (!transaction_id) {
       return res.status(400).json({ error: 'Pago no relacionado con la app' });
     }
@@ -173,7 +175,7 @@ export const mpWebhook = async (req: Request, res: Response) => {
       const payment = await paymentClient.get({ id: data.id });
 
       if (payment.status === 'approved') {
-        const transaction_id = payment.metadata?.transaction_id;
+        const transaction_id = payment.external_reference || payment.metadata?.transaction_id;
         
         if (transaction_id) {
           const transaction = await prisma.transaction.findUnique({
