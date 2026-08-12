@@ -86,15 +86,27 @@ export const createPreference = async (req: Request, res: Response) => {
     // 3. Guardar las fotos como pendientes
     for (const photoId of newPhotos) {
       try {
-        await prisma.unlockedPhoto.create({
-          data: {
+        await prisma.unlockedPhoto.upsert({
+          where: {
+            client_id_photo_id: {
+              client_id: client.id,
+              photo_id: parseInt(photoId),
+            }
+          },
+          update: {
+            unlock_method: 'paid',
+            transaction_id: transaction.id
+          },
+          create: {
             client_id: client.id,
             photo_id: parseInt(photoId),
             unlock_method: 'paid',
             transaction_id: transaction.id
           }
         });
-      } catch (e) {}
+      } catch (e) {
+        console.error('Error upserting UnlockedPhoto in paymentController:', e);
+      }
     }
 
     res.status(200).json({ 

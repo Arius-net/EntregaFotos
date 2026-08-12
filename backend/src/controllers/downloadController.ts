@@ -59,17 +59,27 @@ export const downloadFreePhotos = async (req: Request, res: Response) => {
       const photo = await prisma.photo.findUnique({ where: { id: parseInt(photoId) } });
       if (!photo) continue;
 
-      // Upsert (crear o ignorar si ya existe) del UnlockedPhoto
+      // Upsert (crear o actualizar si existe una versión pendiente) del UnlockedPhoto
       try {
-        await prisma.unlockedPhoto.create({
-          data: {
+        await prisma.unlockedPhoto.upsert({
+          where: {
+            client_id_photo_id: {
+              client_id: client.id,
+              photo_id: photo.id,
+            }
+          },
+          update: {
+            unlock_method: 'free',
+            transaction_id: null
+          },
+          create: {
             client_id: client.id,
             photo_id: photo.id,
             unlock_method: 'free',
           }
         });
       } catch (e) {
-        // Ignorar si ya estaba desbloqueada (Unique constraint failed)
+        console.error('Error upserting UnlockedPhoto in downloadFreePhotos:', e);
       }
 
       // Generar URL firmada forzando la descarga
