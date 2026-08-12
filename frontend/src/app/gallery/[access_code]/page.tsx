@@ -60,13 +60,13 @@ export default function GalleryPage({ params }: { params: Promise<{ access_code:
     try {
       const res = await fetch(`${API_URL}/api/galleries/${unwrappedParams.access_code}/access`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({})
       });
-      
+
       const data = await res.json();
       if (res.ok) {
         setIsAuthenticated(true);
@@ -88,7 +88,7 @@ export default function GalleryPage({ params }: { params: Promise<{ access_code:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
       });
-      
+
       const data = await res.json();
       if (res.ok) {
         setStep('pin');
@@ -110,7 +110,7 @@ export default function GalleryPage({ params }: { params: Promise<{ access_code:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, pin })
       });
-      
+
       const data = await res.json();
       if (res.ok && data.token) {
         localStorage.setItem('client_token', data.token);
@@ -145,12 +145,12 @@ export default function GalleryPage({ params }: { params: Promise<{ access_code:
               </p>
             )}
           </div>
-          
+
           {step === 'email' ? (
             <form onSubmit={handleRequestPin} className="space-y-6">
               <div>
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-white placeholder-gray-500 text-center text-lg"
                   placeholder="tu@email.com"
                   value={email}
@@ -158,8 +158,8 @@ export default function GalleryPage({ params }: { params: Promise<{ access_code:
                   required
                 />
               </div>
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold py-4 rounded-xl shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_25px_rgba(168,85,247,0.5)] transition-all active:scale-95"
               >
                 Continuar
@@ -168,8 +168,8 @@ export default function GalleryPage({ params }: { params: Promise<{ access_code:
           ) : (
             <form onSubmit={handleVerifyPin} className="space-y-6">
               <div>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all text-white placeholder-gray-500 text-center text-3xl font-mono tracking-widest"
                   placeholder="1234"
                   maxLength={4}
@@ -178,8 +178,8 @@ export default function GalleryPage({ params }: { params: Promise<{ access_code:
                   required
                 />
               </div>
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold py-4 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(20,184,166,0.5)] transition-all active:scale-95"
               >
                 Entrar a la Galería
@@ -199,26 +199,19 @@ export default function GalleryPage({ params }: { params: Promise<{ access_code:
   }
 
   return (
-    <div className="min-h-screen bg-black text-white pb-32">
-      <header className="sticky top-0 z-40 bg-black/60 backdrop-blur-xl border-b border-white/10 p-6 flex justify-between items-center shadow-lg">
+    <div className="min-h-screen bg-gray-950 text-white pb-32">
+      <header className="sticky top-0 z-40 bg-gray-900/80 backdrop-blur-md border-b border-gray-800 p-6 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">{gallery.name}</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Cliente: <span className="text-gray-300">{email}</span>
-          </p>
-        </div>
-        <div className="hidden sm:block">
-           <div className="px-4 py-2 bg-white/10 rounded-full border border-white/5 backdrop-blur-sm text-xs font-medium text-gray-300">
-             Acceso Verificado
-           </div>
+          <h1 className="text-2xl font-bold">{gallery.name}</h1>
+          <p className="text-sm text-gray-400">Cliente: {email}</p>
         </div>
       </header>
 
-      <main className="p-4 md:p-8 max-w-[1400px] mx-auto">
-        <PhotoGrid 
-          photos={gallery.photos} 
-          freeLimit={gallery.free_limit} 
-          extraPrice={gallery.extra_photo_price} 
+      <main className="p-4 md:p-8 max-w-7xl mx-auto">
+        <PhotoGrid
+          photos={gallery.photos}
+          freeLimit={gallery.free_limit}
+          extraPrice={gallery.extra_photo_price}
           galleryId={gallery.id}
           clientEmail={email}
         />

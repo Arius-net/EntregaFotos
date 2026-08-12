@@ -22,8 +22,8 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
 
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [unlockedIds, setUnlockedIds] = useState<Set<number>>(new Set());
-  const [freeUnlockedCount, setFreeUnlockedCount] = useState<number>(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentSimulation, setPaymentSimulation] = useState<{ transactionId: number, amount: number } | null>(null);
 
   // Lista de carpetas y selección
   const folders = Array.from(new Set(photos.map(p => p.folder || 'General')));
@@ -32,14 +32,12 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
   const fetchUnlockedPhotos = async () => {
     try {
       const token = localStorage.getItem('client_token');
-      // Añadimos timestamp para evitar caché agresivo de Next.js
-      const res = await fetch(`${API_URL}/api/galleries/${galleryId}/unlocked?t=${Date.now()}`, {
+      const res = await fetch(`${API_URL}/api/galleries/${galleryId}/unlocked`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
         const data = await res.json();
         setUnlockedIds(new Set(data.unlockedIds));
-        setFreeUnlockedCount(data.freeUnlockedCount || 0);
       }
     } catch (e) {
       console.error('Error fetching unlocked photos:', e);
@@ -60,15 +58,14 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
     setSelectedIds(newSelection);
   };
 
-  // Descarga manual de las fotos seleccionadas que YA ESTÁN DESBLOQUEADAS
-  const handleDownloadUnlocked = async () => {
+  const handleDownloadFree = async () => {
     setIsProcessing(true);
     const toastId = toast.loading('Generando URLs de descarga...');
     try {
       const token = localStorage.getItem('client_token');
       const res = await fetch(`${API_URL}/api/downloads/free`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
@@ -79,26 +76,28 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success('Descarga iniciada de fotos desbloqueadas', { id: toastId });
-        
+        toast.success('Descarga iniciada...', { id: toastId });
+
         for (const item of data.urls) {
-          // Usamos a y download para no tener problema con bloqueos de iframes
-          const a = document.createElement('a');
-          a.href = item.url;
-          // Esto forzará la descarga en navegadores modernos si el Content-Disposition es attachment
-          a.download = `photo_${item.photoId}.jpg`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
+          const iframe = document.createElement('iframe');
+          iframe.style.display = 'none';
+          iframe.src = item.url;
+          document.body.appendChild(iframe);
+
+          setTimeout(() => {
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+            }
+          }, 10000);
+
           await new Promise(resolve => setTimeout(resolve, 800));
         }
 
-        // Limpiamos selección tras descargar para evitar confusión
-        setSelectedIds(new Set());
+        // Refrescar fotos desbloqueadas para actualizar la UI
         await fetchUnlockedPhotos();
 
       } else {
-        toast.error(data.error || 'Error al procesar la descarga', { id: toastId });
+        toast.error(data.error || 'Error al procesar la solicitud', { id: toastId });
       }
     } catch (e) {
       toast.error('Error de conexión', { id: toastId });
@@ -109,12 +108,12 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
   const handlePay = async () => {
     setIsProcessing(true);
     const toastId = toast.loading('Preparando pago seguro...');
-    
+
     try {
       const token = localStorage.getItem('client_token');
       const res = await fetch(`${API_URL}/api/payments/create`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
@@ -127,6 +126,7 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
       if (res.ok) {
         const data = await res.json();
         toast.success('Redirigiendo a Mercado Pago...', { id: toastId });
+        // Redirigir al Checkout Pro
         window.location.href = data.init_point;
       } else {
         toast.error('Error al iniciar el pago', { id: toastId });
@@ -138,33 +138,75 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
     }
   };
 
-  // Cálculos de precios y límites
+  const executeSimulatedPayment = async () => {
+    if (!paymentSimulation) return;
+    setIsProcessing(true);
+    const toastId = toast.loading('Procesando pago simulado...');
+
+    try {
+      const res = await fetch('http://127.0.0.1:3001/api/payments/simulate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transactionId: paymentSimulation.transactionId,
+          selected_photo_ids: Array.from(selectedIds)
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('¡Pago aprobado! Descarga iniciada...', { id: toastId });
+        setPaymentSimulation(null);
+
+        for (const item of data.urls) {
+          const iframe = document.createElement('iframe');
+          iframe.style.display = 'none';
+          iframe.src = item.url;
+          document.body.appendChild(iframe);
+
+          setTimeout(() => {
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+            }
+          }, 10000);
+
+          await new Promise(resolve => setTimeout(resolve, 800));
+        }
+
+        await fetchUnlockedPhotos();
+      } else {
+        toast.error(data.error || 'Error al procesar el pago simulado', { id: toastId });
+      }
+    } catch (e) {
+      toast.error('Error de red', { id: toastId });
+    }
+    setIsProcessing(false);
+  };
+
+  // Cálculos de precios basados en las fotos NO desbloqueadas
   const selectedCount = selectedIds.size;
   const newSelectedCount = Array.from(selectedIds).filter(id => !unlockedIds.has(id)).length;
-  
-  // Fotos gratuitas restantes (solo resta las que REALMENTE se desbloquearon gratis)
-  const remainingFreePhotos = Math.max(0, freeLimit - freeUnlockedCount);
+
+  const remainingFreePhotos = Math.max(0, freeLimit - unlockedIds.size);
   const isOverLimit = newSelectedCount > remainingFreePhotos;
   const extraPhotos = isOverLimit ? newSelectedCount - remainingFreePhotos : 0;
   const totalCost = extraPhotos * extraPrice;
-  const areAllSelectedAlreadyUnlocked = selectedCount > 0 && newSelectedCount === 0;
 
   const filteredPhotos = photos.filter(p => (p.folder || 'General') === activeFolder);
 
   return (
     <>
-      {/* Pestañas de Carpetas (Glassmorphism Tabs) */}
+      {/* Pestañas de Carpetas */}
       {folders.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-4 mb-6 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto pb-4 mb-6 hide-scrollbar">
           {folders.map(folder => (
             <button
               key={folder}
               onClick={() => setActiveFolder(folder)}
-              className={`px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300 backdrop-blur-md ${
-                activeFolder === folder
-                  ? 'bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.3)]'
-                  : 'bg-white/10 text-gray-300 hover:bg-white/20'
-              }`}
+              className={`px-6 py-2 rounded-full font-medium whitespace-nowrap transition-colors ${activeFolder === folder
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                }`}
             >
               {folder}
             </button>
@@ -172,117 +214,86 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
         </div>
       )}
 
-      {/* Grid Masonry Moderno */}
-      <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4 pb-32">
-        {filteredPhotos.map((photo) => {
-          const isSelected = selectedIds.has(photo.id);
-          const isUnlocked = unlockedIds.has(photo.id);
+      {filteredPhotos.length === 0 ? (
+        <div className="text-center text-gray-500 py-20">Aún no hay fotos en esta galería.</div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+          {filteredPhotos.map(photo => {
+            const isSelected = selectedIds.has(photo.id);
+            const isUnlocked = unlockedIds.has(photo.id);
+            return (
+              <div
+                key={photo.id}
+                onClick={() => toggleSelection(photo.id)}
+                className={`relative aspect-square cursor-pointer rounded-2xl overflow-hidden transition-all duration-300 ${isSelected ? 'ring-4 ring-blue-500 scale-[0.98]' : 'hover:scale-[1.02] hover:shadow-xl'
+                  }`}
+              >
+                <img
+                  src={photo.thumbnail_url}
+                  alt={`Photo ${photo.id}`}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
 
-          return (
-            <div
-              key={photo.id}
-              onClick={() => toggleSelection(photo.id)}
-              className={`relative cursor-pointer group break-inside-avoid overflow-hidden rounded-2xl transition-all duration-300 ${
-                isSelected ? 'ring-4 ring-blue-500 scale-[0.98]' : 'hover:scale-[1.02] hover:shadow-2xl'
-              }`}
-            >
-              {/* Imagen con desenfoque suave al hacer hover */}
-              <img
-                src={photo.thumbnail_url}
-                alt={`Photo ${photo.id}`}
-                className={`w-full h-auto object-cover transition-transform duration-700 ${
-                  isSelected ? 'brightness-110' : 'group-hover:brightness-90 group-hover:scale-105'
-                }`}
-                loading="lazy"
-              />
+                {/* Checkmark overlay */}
+                <div className={`absolute top-4 right-4 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${isSelected
+                    ? 'bg-blue-500 border-blue-500'
+                    : 'bg-black/30 border-white/50 backdrop-blur-sm'
+                  }`}>
+                  {isSelected && (
+                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
 
-              {/* Indicadores flotantes (Candado / Check) */}
-              <div className="absolute top-3 right-3 flex flex-col gap-2">
-                {!isUnlocked && (
-                  <div className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-lg">
-                    <span className="text-white text-xs">🔒</span>
-                  </div>
-                )}
-                
-                {isSelected && (
-                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.6)] animate-pulse">
-                    <span className="text-white text-xs font-bold">✓</span>
+                {isUnlocked && (
+                  <div className="absolute bottom-2 left-2 bg-green-500/80 backdrop-blur-md text-white text-xs px-2 py-1 rounded-md font-medium border border-green-400">
+                    Desbloqueada
                   </div>
                 )}
               </div>
-              
-              {/* Overlay suave inferior */}
-              <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Floating Action Bar (Bottom) */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-50 transition-all duration-500 transform">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          
-          {/* Info Section */}
-          <div className="flex-1 flex items-center gap-4 text-sm w-full">
-            <div className="bg-white/10 p-3 rounded-xl border border-white/5">
-              <p className="text-gray-400 text-xs">Seleccionadas</p>
-              <p className="text-white font-bold text-lg leading-none">{selectedCount}</p>
-            </div>
-            
-            <div className="flex-1">
-              <p className="text-gray-300 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                Fotos Gratis: <span className="font-bold text-white">{remainingFreePhotos}</span> restantes
-              </p>
-              {isOverLimit && !areAllSelectedAlreadyUnlocked && (
-                <p className="text-gray-400 mt-1 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  Extra: <span className="font-bold text-emerald-400">{extraPhotos} fotos</span> × ${extraPrice}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Acción Principal */}
-          <div className="w-full md:w-auto">
-            {selectedCount === 0 ? (
-              <div className="bg-white/5 text-gray-500 px-6 py-3 rounded-xl font-medium text-center border border-white/5">
-                Selecciona fotos para continuar
-              </div>
-            ) : areAllSelectedAlreadyUnlocked ? (
-              <button
-                onClick={handleDownloadUnlocked}
-                disabled={isProcessing}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-8 py-3 rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all active:scale-95 disabled:opacity-50"
-              >
-                {isProcessing ? 'Descargando...' : '⬇️ Descargar'}
-              </button>
-            ) : !isOverLimit ? (
-              <button
-                onClick={handleDownloadUnlocked}
-                disabled={isProcessing}
-                className="w-full bg-white text-black hover:bg-gray-200 px-8 py-3 rounded-xl font-bold shadow-lg transition-all active:scale-95 disabled:opacity-50"
-              >
-                {isProcessing ? 'Procesando...' : 'Desbloquear Gratis'}
-              </button>
-            ) : (
-              <button
-                onClick={handlePay}
-                disabled={isProcessing}
-                className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white px-8 py-3 rounded-xl font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
-              >
-                {isProcessing ? (
-                  'Conectando...'
-                ) : (
-                  <>
-                    <span>Pagar</span>
-                    <span className="text-xl">${totalCost}</span>
-                  </>
-                )}
-              </button>
-            )}
-          </div>
+            );
+          })}
         </div>
+      )}
+
+      {/* Floating Counter UI */}
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-800/95 backdrop-blur-xl border border-gray-700 px-8 py-4 rounded-full shadow-2xl flex items-center gap-8 z-50 transition-all w-[90%] md:w-auto max-w-2xl overflow-x-auto whitespace-nowrap">
+
+        {/* Resumen de Límite Gratuito */}
+        <div className="flex flex-col hidden sm:flex">
+          <span className="text-sm text-gray-400">Restantes Gratis</span>
+          <span className="text-lg font-bold text-gray-200">
+            {remainingFreePhotos} <span className="text-gray-500 text-sm">/ {freeLimit}</span>
+          </span>
+        </div>
+
+        {/* Resumen de Selección Actual */}
+        <div className="flex flex-col border-l border-gray-700 pl-4 sm:pl-8">
+          <span className="text-sm text-gray-400">Seleccionadas (Nuevas)</span>
+          <span className="text-lg font-bold">
+            <span className={isOverLimit ? 'text-blue-400' : 'text-white'}>{newSelectedCount}</span>
+          </span>
+        </div>
+
+        {isOverLimit && (
+          <div className="flex flex-col border-l border-gray-700 pl-8 animate-fade-in">
+            <span className="text-sm text-gray-400">Total a pagar</span>
+            <span className="text-lg font-bold text-green-400">${totalCost.toFixed(2)}</span>
+          </div>
+        )}
+
+        <button
+          className={`ml-auto md:ml-4 px-6 py-3 rounded-full font-semibold transition-all ${selectedCount > 0
+              ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white hover:scale-105 shadow-lg'
+              : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+            } ${isProcessing ? 'opacity-50 cursor-wait' : ''}`}
+          disabled={selectedCount === 0 || isProcessing}
+          onClick={isOverLimit ? handlePay : handleDownloadFree}
+        >
+          {isProcessing ? 'Procesando...' : (isOverLimit ? 'Pagar y Descargar' : 'Descargar Gratis')}
+        </button>
       </div>
     </>
   );
