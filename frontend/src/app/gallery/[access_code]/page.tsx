@@ -199,15 +199,22 @@ export default function GalleryPage({ params }: { params: Promise<{ access_code:
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white pb-32">
-      <header className="sticky top-0 z-40 bg-gray-900/80 backdrop-blur-md border-b border-gray-800 p-6 flex justify-between items-center">
+    <div className="min-h-screen bg-black text-white pb-32">
+      <header className="sticky top-0 z-40 bg-black/60 backdrop-blur-xl border-b border-white/10 p-6 flex justify-between items-center shadow-lg">
         <div>
-          <h1 className="text-2xl font-bold">{gallery.name}</h1>
-          <p className="text-sm text-gray-400">Cliente: {email}</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">{gallery.name}</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Cliente: <span className="text-gray-300">{email}</span>
+          </p>
+        </div>
+        <div className="hidden sm:block">
+           <div className="px-4 py-2 bg-white/10 rounded-full border border-white/5 backdrop-blur-sm text-xs font-medium text-gray-300">
+             Acceso Verificado
+           </div>
         </div>
       </header>
 
-      <main className="p-4 md:p-8 max-w-7xl mx-auto">
+      <main className="p-4 md:p-8 max-w-[1400px] mx-auto">
         <PhotoGrid 
           photos={gallery.photos} 
           freeLimit={gallery.free_limit} 
