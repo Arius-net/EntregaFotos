@@ -104,11 +104,13 @@ export const getUnlockedPhotos = async (req: Request, res: Response) => {
           { transaction: { status: 'completed' } }
         ]
       },
-      select: { photo_id: true }
+      select: { photo_id: true, unlock_method: true }
     });
 
     const unlockedIds = unlockedPhotos.map((u: { photo_id: number }) => u.photo_id);
-    res.status(200).json({ unlockedIds });
+    const freeUnlockedCount = unlockedPhotos.filter((u: { unlock_method: string }) => u.unlock_method === 'free').length;
+
+    res.status(200).json({ unlockedIds, freeUnlockedCount });
   } catch (error) {
     console.error('Error fetching unlocked photos:', error);
     res.status(500).json({ error: 'Error fetching unlocked photos' });
@@ -205,7 +207,7 @@ export const deleteGallery = async (req: Request, res: Response) => {
     const photographer_id = (req as any).user?.id;
     if (!photographer_id) return res.status(401).json({ error: 'No autorizado' });
 
-    const gallery = await prisma.gallery.findUnique({
+    const gallery = await prisma.gallery.findUnique({ 
       where: { id: galleryId },
       include: { photos: true }
     });

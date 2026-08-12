@@ -35,7 +35,7 @@ export const register = async (req: Request, res: Response) => {
       const token = jwt.sign({ id: client.id, role: 'client' }, JWT_SECRET, { expiresIn: '7d' });
       return res.status(201).json({ token, user: { id: client.id, email: client.email, role } });
     }
-
+    
     return res.status(400).json({ error: 'Rol inválido' });
   } catch (error) {
     console.error('Error en registro:', error);
@@ -100,8 +100,8 @@ export const requestClientPin = async (req: Request, res: Response) => {
       data: { otp_code: pin, otp_expires_at: expiresAt }
     });
 
-    // Enviar correo de verdad si está configurado el SMTP, sino simular
-    if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+    // Enviar correo de verdad si está configurado Resend, sino simular
+    if (process.env.RESEND_API_KEY) {
       const sent = await sendPinEmail(email, pin);
       if (!sent) {
         console.error('No se pudo enviar el correo a', email);
@@ -128,7 +128,7 @@ export const verifyClientPin = async (req: Request, res: Response) => {
     if (!email || !pin) return res.status(400).json({ error: 'Correo y PIN requeridos' });
 
     const client = await prisma.client.findUnique({ where: { email } });
-
+    
     if (!client || !client.otp_code || client.otp_code !== pin) {
       return res.status(401).json({ error: 'PIN incorrecto' });
     }

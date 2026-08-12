@@ -10,14 +10,15 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ acces
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState('Verificando tu pago...');
-
+  const [isSuccess, setIsSuccess] = useState<boolean | null>(null);
+  
   const payment_id = searchParams.get('payment_id');
   const preference_id = searchParams.get('preference_id');
 
   useEffect(() => {
     if (!payment_id) {
       setStatus('No se encontró el ID de pago.');
-      setTimeout(() => router.push(`/gallery/${unwrappedParams.access_code}`), 3000);
+      setIsSuccess(false);
       return;
     }
 
@@ -26,7 +27,7 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ acces
         const token = localStorage.getItem('client_token');
         const res = await fetch(`${API_URL}/api/payments/verify`, {
           method: 'POST',
-          headers: {
+          headers: { 
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
@@ -34,47 +35,57 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ acces
         });
 
         if (res.ok) {
-          const data = await res.json();
-          setStatus('¡Pago verificado! Descargando tus fotos...');
-          toast.success('Pago exitoso, iniciando descarga');
-
-          // Download all urls
-          data.urls.forEach((item: any) => {
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.src = item.url;
-            document.body.appendChild(iframe);
-            setTimeout(() => document.body.removeChild(iframe), 15000);
-          });
-
-          // Redirect back to gallery
-          setTimeout(() => {
-            router.push(`/gallery/${unwrappedParams.access_code}`);
-          }, 3000);
+          setStatus('¡Pago verificado! Tus fotos se han desbloqueado.');
+          setIsSuccess(true);
+          toast.success('Pago exitoso');
         } else {
           setStatus('Error al verificar el pago.');
-          toast.error('No se pudo verificar tu pago automáticamente');
+          setIsSuccess(false);
+          toast.error('No se pudo verificar tu pago');
         }
       } catch (error) {
         setStatus('Error de conexión.');
+        setIsSuccess(false);
       }
     };
 
     verifyPayment();
-  }, [payment_id, preference_id, router, unwrappedParams.access_code]);
+  }, [payment_id, preference_id, API_URL]);
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-4">
-      <div className="bg-gray-900 border border-green-500/30 rounded-3xl p-8 max-w-md w-full shadow-2xl text-center">
-        <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/50">
-          <span className="text-4xl">✅</span>
-        </div>
-        <h1 className="text-2xl font-bold text-white mb-4">Procesando Descarga</h1>
-        <p className="text-gray-400">{status}</p>
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
+      <div className="bg-gray-900 border border-white/10 rounded-3xl p-8 max-w-md w-full shadow-2xl text-center backdrop-blur-xl">
+        {isSuccess === null && (
+          <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-blue-500/50">
+             <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
+        
+        {isSuccess === true && (
+          <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/50">
+            <span className="text-4xl">✅</span>
+          </div>
+        )}
 
-        <div className="mt-8 flex justify-center">
-          <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
-        </div>
+        {isSuccess === false && (
+          <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-500/50">
+            <span className="text-4xl">❌</span>
+          </div>
+        )}
+
+        <h1 className="text-2xl font-bold text-white mb-4">
+          {isSuccess === null ? 'Procesando Pago' : (isSuccess ? '¡Pago Exitoso!' : 'Error en el Pago')}
+        </h1>
+        <p className="text-gray-400 mb-8">{status}</p>
+        
+        {isSuccess !== null && (
+          <button
+            onClick={() => router.push(`/gallery/${unwrappedParams.access_code}`)}
+            className="w-full bg-white text-black font-semibold py-4 rounded-xl shadow-lg hover:bg-gray-200 transition-all active:scale-95"
+          >
+            Volver a mi Galería
+          </button>
+        )}
       </div>
     </div>
   );
