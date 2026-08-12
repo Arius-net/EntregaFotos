@@ -25,8 +25,8 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
   const [freeUnlockedCount, setFreeUnlockedCount] = useState<number>(0);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Lista de carpetas y selección
-  const folders = Array.from(new Set(photos.map(p => p.folder || 'General')));
+  // Lista de carpetas y selección (ordenadas alfabéticamente)
+  const folders = Array.from(new Set(photos.map(p => p.folder || 'General'))).sort((a, b) => a.localeCompare(b));
   const [activeFolder, setActiveFolder] = useState<string>(folders[0] || 'General');
 
   const fetchUnlockedPhotos = async () => {
