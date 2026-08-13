@@ -3,12 +3,21 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Camera, MessageCircle, ArrowRight, Image as ImageIcon, Store, ChevronRight, ChevronLeft, Lock } from 'lucide-react';
+import { Camera, MessageCircle, ArrowRight, Image as ImageIcon, Store, ChevronRight, ChevronLeft, Lock, Mail, MapPin } from 'lucide-react';
 
 const HERO_IMAGES = [
   '/hero_wedding_1786601115161.png',
   '/hero_concert_1786601134635.png',
   '/hero_portrait_1786601277435.png'
+];
+
+const PORTFOLIO_IMAGES = [
+  '/hero_wedding_1786601115161.png',
+  '/photographer_profile_1786601309429.png',
+  '/hero_concert_1786601134635.png',
+  '/wallpapers_store_1786601317099.png',
+  '/hero_portrait_1786601277435.png',
+  '/hero_wedding_1786601115161.png'
 ];
 
 export default function LandingPage() {
@@ -18,7 +27,6 @@ export default function LandingPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const router = useRouter();
 
-  // Rotación del carrusel
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % HERO_IMAGES.length);
@@ -51,16 +59,23 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#0a0c1a] text-white selection:bg-[#282e70] selection:text-white font-sans overflow-x-hidden scroll-smooth">
       
-      {/* NAVBAR (Glassmorphism) */}
+      {/* NAVBAR */}
       <nav className="fixed w-full z-50 top-0 transition-all duration-300 bg-[#171c54]/80 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
-            <div className="flex-shrink-0 cursor-pointer flex items-center" onClick={() => window.scrollTo(0,0)}>
-              <img src="/logo.png" alt="Quevedo Contigo Logo" className="h-12 w-auto bg-white/90 p-1 rounded-lg" />
+            <div className="flex-shrink-0 cursor-pointer flex items-center gap-3" onClick={() => window.scrollTo(0,0)}>
+              <div className="bg-white/95 p-1.5 rounded-xl shadow-lg">
+                <img src="/logo_symbol.png" alt="Logo" className="h-10 w-10 object-contain" />
+              </div>
+              <h1 className="text-xl md:text-2xl font-bold tracking-tighter leading-none hidden sm:block">
+                <span className="text-white">Quevedo</span>
+                <span className="text-[#8892f0]">Contigo</span>
+              </h1>
             </div>
             <div className="hidden md:block">
-              <div className="ml-10 flex items-baseline space-x-8">
+              <div className="ml-10 flex items-baseline space-x-6">
                 <a href="#about" className="hover:text-[#8892f0] px-3 py-2 rounded-md text-sm font-medium transition-colors">Sobre Mí</a>
+                <a href="#portfolio" className="hover:text-[#8892f0] px-3 py-2 rounded-md text-sm font-medium transition-colors">Portafolio</a>
                 <a href="#portal" className="hover:text-[#8892f0] px-3 py-2 rounded-md text-sm font-medium transition-colors">Entregas</a>
                 <a href="#store" className="hover:text-[#8892f0] px-3 py-2 rounded-md text-sm font-medium transition-colors">Tienda</a>
                 <a href="#contact" className="hover:text-[#8892f0] px-3 py-2 rounded-md text-sm font-medium transition-colors">Contacto</a>
@@ -75,24 +90,18 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* SECTION 1: HERO CAROUSEL */}
+      {/* HERO SECTION */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        {/* Carousel Backgrounds */}
         {HERO_IMAGES.map((img, idx) => (
           <div 
             key={img}
             className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${idx === currentSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}
           >
             <div className="absolute inset-0 bg-gradient-to-b from-[#171c54]/60 via-[#171c54]/40 to-[#0a0c1a] z-10" />
-            <img 
-              src={img} 
-              alt="Hero" 
-              className="w-full h-full object-cover"
-            />
+            <img src={img} alt="Hero" className="w-full h-full object-cover" />
           </div>
         ))}
         
-        {/* Controls */}
         <button onClick={prevSlide} className="absolute left-4 md:left-10 z-20 p-3 rounded-full bg-black/20 backdrop-blur-md border border-white/10 hover:bg-white/10 transition text-white/70 hover:text-white">
           <ChevronLeft size={24} />
         </button>
@@ -100,7 +109,6 @@ export default function LandingPage() {
           <ChevronRight size={24} />
         </button>
 
-        {/* Hero Content */}
         <div className="relative z-20 text-center px-4 max-w-4xl mx-auto mt-20">
           <h2 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 drop-shadow-2xl">
             Capturando momentos, <br/>
@@ -112,16 +120,15 @@ export default function LandingPage() {
             Especializado en fotografía premium de bodas, eventos y retratos. Cada disparo es una pieza de arte diseñada para perdurar.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="#portal" className="px-8 py-4 bg-white text-[#171c54] font-bold rounded-full hover:bg-gray-100 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)]">
-              Ver mis fotos (Entregas)
+            <a href="#portfolio" className="px-8 py-4 bg-white text-[#171c54] font-bold rounded-full hover:bg-gray-100 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+              Ver Portafolio
             </a>
-            <a href="#store" className="px-8 py-4 bg-transparent border-2 border-white/50 text-white font-bold rounded-full hover:bg-white/10 hover:border-white transition-all flex items-center justify-center gap-2">
-              <Store size={20} /> Tienda de Fondos
+            <a href="#portal" className="px-8 py-4 bg-transparent border-2 border-white/50 text-white font-bold rounded-full hover:bg-white/10 hover:border-white transition-all">
+              Zona de Clientes
             </a>
           </div>
         </div>
 
-        {/* Carousel Indicators */}
         <div className="absolute bottom-10 z-20 flex space-x-3 left-1/2 -translate-x-1/2">
           {HERO_IMAGES.map((_, idx) => (
             <button 
@@ -133,7 +140,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* SECTION 2: ABOUT THE PHOTOGRAPHER */}
+      {/* ABOUT SECTION */}
       <section id="about" className="py-24 bg-[#0a0c1a] relative scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center gap-16">
@@ -157,17 +164,36 @@ export default function LandingPage() {
               <p className="text-gray-400 text-lg mb-8 leading-relaxed">
                 Desde bodas íntimas hasta conciertos vibrantes, mi objetivo es que cuando mires tus fotos en 10 años, vuelvas a sentir exactamente lo mismo que sentías en ese instante.
               </p>
-              <a href="#contact" className="inline-flex items-center gap-2 text-white font-semibold hover:text-[#aab2fc] transition-colors group">
-                Hablemos de tu próximo evento <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
-              </a>
             </div>
           </div>
         </div>
       </section>
 
-      {/* SECTION 3: CLIENT PORTAL (ENTREGAS) */}
+      {/* PORTFOLIO SECTION */}
+      <section id="portfolio" className="py-24 bg-[#05060d] relative scroll-mt-20 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h3 className="text-4xl md:text-5xl font-bold mb-6">Mis Mejores Trabajos</h3>
+            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+              Una selección de mis capturas favoritas. Cada imagen es un testimonio de la dedicación y el amor por el arte fotográfico.
+            </p>
+          </div>
+          
+          <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+            {PORTFOLIO_IMAGES.map((img, idx) => (
+              <div key={idx} className="relative group overflow-hidden rounded-2xl break-inside-avoid shadow-lg border border-white/10">
+                <img src={img} alt={`Portafolio ${idx + 1}`} className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#171c54]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
+                  <span className="text-white font-medium text-lg">Sesión Profesional</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CLIENT PORTAL SECTION */}
       <section id="portal" className="py-24 relative overflow-hidden bg-[#0d1024] scroll-mt-20">
-        {/* Decoraciones de fondo */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#171c54] rounded-full filter blur-[120px] opacity-40"></div>
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#282e70] rounded-full filter blur-[120px] opacity-30"></div>
 
@@ -216,7 +242,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* SECTION 4: STORE (FONDOS DE PANTALLA) */}
+      {/* STORE SECTION */}
       <section id="store" className="py-24 bg-[#0a0c1a] border-t border-white/5 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-gradient-to-br from-[#171c54]/30 to-black border border-white/10 rounded-3xl overflow-hidden flex flex-col lg:flex-row items-center">
@@ -239,62 +265,78 @@ export default function LandingPage() {
                  alt="Tienda de Fondos" 
                  className="absolute inset-0 w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity duration-500"
                />
-               {/* Gradiente para difuminar el borde en mobile */}
                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0c1a] lg:from-transparent via-transparent to-transparent"></div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* FOOTER & CONTACT */}
-      <footer id="contact" className="bg-[#05060d] pt-20 pb-10 border-t border-white/10 scroll-mt-20">
+      {/* CONTACT SECTION */}
+      <section id="contact" className="py-24 bg-gradient-to-b from-[#0a0c1a] to-[#05060d] border-t border-white/5 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
+          <div className="bg-[#171c54]/20 border border-white/10 rounded-3xl p-8 md:p-16 text-center max-w-4xl mx-auto">
+            <h3 className="text-4xl md:text-5xl font-bold mb-6">¿Trabajamos juntos?</h3>
+            <p className="text-gray-400 text-lg mb-10">
+              Si tienes un evento especial en puerta o te interesa una sesión personalizada, estaré encantado de platicar contigo y hacer realidad tus ideas.
+            </p>
             
-            {/* Brand */}
-            <div>
-              <img src="/logo.png" alt="Quevedo Contigo Logo" className="h-16 w-auto bg-white/90 p-1 rounded-xl mb-4" />
-              <p className="text-gray-400 leading-relaxed mb-6">
-                Capturando momentos inolvidables con una estética cinemática y profesional. Tu historia merece ser contada de la mejor manera.
-              </p>
-              <div className="flex space-x-4">
-                <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-[#171c54] hover:text-white transition-colors text-gray-400 border border-white/10">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
-                </a>
-                <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-[#171c54] hover:text-white transition-colors text-gray-400 border border-white/10">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
-                </a>
-              </div>
-            </div>
-
-            {/* Enlaces */}
-            <div>
-              <h5 className="text-white font-semibold mb-6 uppercase tracking-wider text-sm">Navegación</h5>
-              <ul className="space-y-4">
-                <li><a href="#about" className="text-gray-400 hover:text-white transition-colors">Sobre Mí</a></li>
-                <li><a href="#portal" className="text-gray-400 hover:text-white transition-colors">Portal de Entregas</a></li>
-                <li><a href="#store" className="text-gray-400 hover:text-white transition-colors">Fondos de Pantalla</a></li>
-                <li><a href="/admin/dashboard" className="text-[#8892f0] hover:text-white transition-colors">Acceso Fotógrafo (Admin)</a></li>
-              </ul>
-            </div>
-
-            {/* Contacto Directo */}
-            <div>
-              <h5 className="text-white font-semibold mb-6 uppercase tracking-wider text-sm">Hablemos</h5>
-              <p className="text-gray-400 mb-6">
-                ¿Tienes un evento en puerta o quieres agendar una sesión fotográfica? Escríbeme directamente.
-              </p>
-              <a 
-                href="https://wa.me/521234567890" 
-                target="_blank" 
-                rel="noreferrer"
-                className="inline-flex items-center gap-3 px-6 py-3 bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/30 rounded-xl hover:bg-[#25D366] hover:text-white transition-all font-medium"
-              >
-                <MessageCircle size={20} />
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-6 mb-12">
+              <a href="https://wa.me/521234567890" target="_blank" rel="noreferrer" className="flex items-center gap-3 px-8 py-4 bg-[#25D366] text-black font-bold rounded-xl hover:bg-[#20b858] hover:scale-105 transition-all shadow-[0_0_20px_rgba(37,211,102,0.3)]">
+                <MessageCircle size={24} />
                 Enviar WhatsApp
+              </a>
+              <a href="mailto:contacto@quevedocontigo.com" className="flex items-center gap-3 px-8 py-4 bg-transparent border-2 border-[#8892f0] text-white font-bold rounded-xl hover:bg-[#8892f0]/10 transition-all">
+                <Mail size={24} />
+                Enviar Correo
               </a>
             </div>
 
+            <div className="flex justify-center gap-6">
+              <a href="#" className="flex flex-col items-center gap-2 group">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center text-white transform group-hover:scale-110 transition-all shadow-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                </div>
+                <span className="text-gray-400 text-sm group-hover:text-white transition-colors">Instagram</span>
+              </a>
+              <a href="#" className="flex flex-col items-center gap-2 group">
+                <div className="w-14 h-14 rounded-full bg-[#1877f2] flex items-center justify-center text-white transform group-hover:scale-110 transition-all shadow-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+                </div>
+                <span className="text-gray-400 text-sm group-hover:text-white transition-colors">Facebook</span>
+              </a>
+              <a href="#" className="flex flex-col items-center gap-2 group">
+                <div className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center text-white transform group-hover:scale-110 transition-all shadow-lg border border-gray-700">
+                  <MapPin size={24} />
+                </div>
+                <span className="text-gray-400 text-sm group-hover:text-white transition-colors">Ubicación</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="bg-[#020308] pt-16 pb-8 border-t border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-12">
+            
+            <div className="flex items-center gap-4">
+              <div className="bg-white/95 p-1.5 rounded-xl shadow-lg">
+                <img src="/logo_symbol.png" alt="Logo" className="h-12 w-12 object-contain" />
+              </div>
+              <h4 className="text-3xl font-bold tracking-tighter leading-none">
+                <span className="text-white">Quevedo</span><br/>
+                <span className="text-[#8892f0]">Contigo</span>
+              </h4>
+            </div>
+
+            <ul className="flex flex-wrap justify-center gap-6 text-sm">
+              <li><a href="#about" className="text-gray-400 hover:text-white transition-colors">Sobre Mí</a></li>
+              <li><a href="#portfolio" className="text-gray-400 hover:text-white transition-colors">Portafolio</a></li>
+              <li><a href="#portal" className="text-gray-400 hover:text-white transition-colors">Entregas</a></li>
+              <li><a href="#store" className="text-gray-400 hover:text-white transition-colors">Tienda</a></li>
+              <li><a href="/admin/dashboard" className="text-[#8892f0] hover:text-white transition-colors font-medium">Panel Admin</a></li>
+            </ul>
           </div>
 
           <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
