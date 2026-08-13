@@ -54,32 +54,37 @@ export const downloadFreePhotos = async (req: Request, res: Response) => {
     const unlockedRecords = [];
     const downloadUrls = [];
 
+    const alreadyUnlockedIds = new Set(alreadyUnlockedSelected.map((u: any) => u.photo_id));
+
     for (const photoId of selected_photo_ids) {
+      const parsedId = parseInt(photoId);
       // Buscar la foto para obtener su high_res_key
-      const photo = await prisma.photo.findUnique({ where: { id: parseInt(photoId) } });
+      const photo = await prisma.photo.findUnique({ where: { id: parsedId } });
       if (!photo) continue;
 
-      // Upsert (crear o actualizar si existe una versión pendiente) del UnlockedPhoto
-      try {
-        await prisma.unlockedPhoto.upsert({
-          where: {
-            client_id_photo_id: {
+      if (!alreadyUnlockedIds.has(parsedId)) {
+        // Upsert (crear o actualizar si existe una versión pendiente) del UnlockedPhoto
+        try {
+          await prisma.unlockedPhoto.upsert({
+            where: {
+              client_id_photo_id: {
+                client_id: client.id,
+                photo_id: photo.id,
+              }
+            },
+            update: {
+              unlock_method: 'free',
+              transaction_id: null
+            },
+            create: {
               client_id: client.id,
               photo_id: photo.id,
+              unlock_method: 'free',
             }
-          },
-          update: {
-            unlock_method: 'free',
-            transaction_id: null
-          },
-          create: {
-            client_id: client.id,
-            photo_id: photo.id,
-            unlock_method: 'free',
-          }
-        });
-      } catch (e) {
-        console.error('Error upserting UnlockedPhoto in downloadFreePhotos:', e);
+          });
+        } catch (e) {
+          console.error('Error upserting UnlockedPhoto in downloadFreePhotos:', e);
+        }
       }
 
       // Generar URL firmada forzando la descarga
