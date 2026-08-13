@@ -55,13 +55,8 @@ export default function LandingPage() {
       <nav className="fixed w-full z-50 top-0 transition-all duration-300 bg-[#171c54]/80 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
-            <div className="flex-shrink-0 cursor-pointer flex flex-col justify-center" onClick={() => window.scrollTo(0,0)}>
-              {/* Logo Text Styling based on provided colors */}
-              <h1 className="text-2xl font-bold tracking-tighter leading-none">
-                <span className="text-white">Quevedo</span>
-                <span className="text-[#8892f0]">Contigo</span>
-              </h1>
-              <p className="text-[10px] tracking-[0.3em] uppercase text-gray-400 mt-1">Fotografía</p>
+            <div className="flex-shrink-0 cursor-pointer flex items-center" onClick={() => window.scrollTo(0,0)}>
+              <img src="/logo.png" alt="Quevedo Contigo Logo" className="h-12 w-auto bg-white/90 p-1 rounded-lg" />
             </div>
             <div className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-8">
@@ -258,10 +253,7 @@ export default function LandingPage() {
             
             {/* Brand */}
             <div>
-              <h4 className="text-2xl font-bold tracking-tighter mb-4 leading-none">
-                <span className="text-white">Quevedo</span>
-                <span className="text-[#8892f0]">Contigo</span>
-              </h4>
+              <img src="/logo.png" alt="Quevedo Contigo Logo" className="h-16 w-auto bg-white/90 p-1 rounded-xl mb-4" />
               <p className="text-gray-400 leading-relaxed mb-6">
                 Capturando momentos inolvidables con una estética cinemática y profesional. Tu historia merece ser contada de la mejor manera.
               </p>
