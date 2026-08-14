@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import LandingEditor from './LandingEditor';
+import StoreEditor from './StoreEditor';
 
 interface Gallery {
   id: number;
@@ -42,7 +43,7 @@ export default function AdminDashboard() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [activeTab, setActiveTab] = useState<'galleries' | 'landing'>('galleries');
+  const [activeTab, setActiveTab] = useState<'galleries' | 'landing' | 'store'>('galleries');
 
   const PHOTOGRAPHER_ID = 1; // Fotógrafo simulado
 
@@ -199,18 +200,24 @@ export default function AdminDashboard() {
           <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
             Panel de Fotógrafo
           </h1>
-          <div className="flex bg-gray-900 rounded-lg p-1 border border-gray-800">
+          <div className="flex bg-gray-900 rounded-lg p-1 border border-gray-800 overflow-x-auto">
             <button 
               onClick={() => setActiveTab('galleries')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'galleries' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}
+              className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'galleries' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}
             >
               Galerías de Clientes
             </button>
             <button 
               onClick={() => setActiveTab('landing')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'landing' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}
+              className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'landing' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}
             >
               Diseño de Landing Page
+            </button>
+            <button 
+              onClick={() => setActiveTab('store')}
+              className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'store' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}
+            >
+              Tienda Oficial
             </button>
           </div>
         </header>
@@ -421,8 +428,10 @@ export default function AdminDashboard() {
             )}
           </div>
         </div>
-        ) : (
+        ) : activeTab === 'landing' ? (
           <LandingEditor />
+        ) : (
+          <StoreEditor />
         )}
       </div>
     </div>

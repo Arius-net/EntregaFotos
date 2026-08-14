@@ -115,3 +115,15 @@ model LandingSettings {
 
   updated_at          DateTime @updatedAt
 }
+
+model StoreItem {
+  id              Int      @id @default(autoincrement())
+  title           String
+  description     String   @db.Text
+  price           Decimal
+  thumbnail_url   String
+  high_res_key    String
+  is_active       Boolean  @default(true)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+}
