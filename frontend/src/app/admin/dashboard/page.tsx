@@ -12,6 +12,9 @@ interface Gallery {
   access_code: string;
   free_limit: number;
   extra_photo_price: number;
+  type?: string;
+  status?: string;
+  selection_limit?: number;
   max_clients_allowed?: number;
   expires_at?: string;
   _count?: {
@@ -23,6 +26,8 @@ export default function AdminDashboard() {
   const router = useRouter();
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
   const [galleryName, setGalleryName] = useState('');
+  const [galleryType, setGalleryType] = useState('FINAL');
+  const [selectionLimit, setSelectionLimit] = useState(20);
   const [freeLimit, setFreeLimit] = useState(10);
   const [extraPrice, setExtraPrice] = useState(5.00);
   const [maxClients, setMaxClients] = useState(0);
@@ -36,6 +41,11 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  
+  // Selection Modal
+  const [viewingSelectionFor, setViewingSelectionFor] = useState<Gallery | null>(null);
+  const [clientSelections, setClientSelections] = useState<any[]>([]);
+  const [isLoadingSelections, setIsLoadingSelections] = useState(false);
 
   // Estado para la subida de fotos
   const [activeGalleryForUpload, setActiveGalleryForUpload] = useState<Gallery | null>(null);
@@ -97,6 +107,8 @@ export default function AdminDashboard() {
         },
         body: JSON.stringify({
           name: galleryName,
+          type: galleryType,
+          selection_limit: selectionLimit,
           free_limit: freeLimit,
           extra_photo_price: extraPrice,
           expires_at: expiresAt,
@@ -127,12 +139,33 @@ export default function AdminDashboard() {
   const handleEditClick = (gallery: Gallery) => {
     setEditingId(gallery.id);
     setGalleryName(gallery.name);
+    setGalleryType(gallery.type || 'FINAL');
+    setSelectionLimit(gallery.selection_limit || 20);
     setFreeLimit(gallery.free_limit);
     setExtraPrice(gallery.extra_photo_price);
     if (gallery.max_clients_allowed !== undefined) setMaxClients(gallery.max_clients_allowed);
     if (gallery.expires_at) setExpiresAt(gallery.expires_at.split('T')[0]);
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const openSelectionModal = async (gallery: Gallery) => {
+    setViewingSelectionFor(gallery);
+    setIsLoadingSelections(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/admin/galleries/${gallery.id}/selections`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setClientSelections(data.selections);
+      }
+    } catch (e) {
+      toast.error('Error al cargar selecciones');
+    } finally {
+      setIsLoadingSelections(false);
+    }
   };
 
   const handleDeleteGallery = async (id: number) => {
@@ -295,30 +328,57 @@ export default function AdminDashboard() {
                       required
                     />
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-sm text-gray-400 font-medium">Gratis</label>
-                      <input 
-                        type="number" 
-                        className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors text-white"
-                        value={freeLimit}
-                        onChange={e => setFreeLimit(parseInt(e.target.value))}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-sm text-gray-400 font-medium">Precio ($)</label>
-                      <input 
-                        type="number" 
-                        className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors text-white"
-                        value={extraPrice}
-                        onChange={e => setExtraPrice(parseFloat(e.target.value))}
-                        step="0.01"
-                        required
-                      />
+
+                  <div className="space-y-2">
+                    <label className="text-sm text-gray-400 font-medium block">Tipo de Galería</label>
+                    <div className="flex bg-gray-950 border border-gray-800 rounded-xl p-1">
+                      <button type="button" onClick={() => setGalleryType('FINAL')} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${galleryType === 'FINAL' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+                        Entrega Final
+                      </button>
+                      <button type="button" onClick={() => setGalleryType('SELECTION')} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${galleryType === 'SELECTION' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+                        Para Selección (Proofing)
+                      </button>
                     </div>
                   </div>
+                  
+                  {galleryType === 'FINAL' ? (
+                    <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                      <div className="space-y-1.5">
+                        <label className="text-sm text-gray-400 font-medium">Fotos Gratis</label>
+                        <input 
+                          type="number" 
+                          className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors text-white"
+                          value={freeLimit}
+                          onChange={e => setFreeLimit(parseInt(e.target.value))}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-sm text-gray-400 font-medium">Precio extra ($)</label>
+                        <input 
+                          type="number" 
+                          className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors text-white"
+                          value={extraPrice}
+                          onChange={e => setExtraPrice(parseFloat(e.target.value))}
+                          step="0.01"
+                          required
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2">
+                      <label className="text-sm text-gray-400 font-medium">Límite de Selección</label>
+                      <input 
+                        type="number" 
+                        className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 transition-colors text-white"
+                        value={selectionLimit}
+                        onChange={e => setSelectionLimit(parseInt(e.target.value))}
+                        required
+                        placeholder="Ej: 20"
+                      />
+                      <p className="text-xs text-gray-500">¿Cuántas fotos de todas las subidas tiene derecho a escoger el cliente?</p>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
@@ -378,7 +438,12 @@ export default function AdminDashboard() {
                 {galleries.map(gallery => (
                   <div key={gallery.id} className={`bg-gray-900 border ${activeGalleryForUpload?.id === gallery.id ? 'border-blue-500' : 'border-gray-800'} rounded-2xl p-5 hover:border-gray-700 transition-colors`}>
                     <div className="flex justify-between items-start mb-3">
-                      <h3 className="font-semibold text-lg line-clamp-1">{gallery.name}</h3>
+                      <div>
+                        <h3 className="font-semibold text-lg line-clamp-1">{gallery.name}</h3>
+                        <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${gallery.type === 'SELECTION' ? 'bg-purple-900/30 text-purple-400 border border-purple-500/30' : 'bg-blue-900/30 text-blue-400 border border-blue-500/30'}`}>
+                          {gallery.type === 'SELECTION' ? 'SELECCIÓN' : 'FINAL'}
+                        </span>
+                      </div>
                       <span className="text-xs font-mono bg-blue-500/10 text-blue-400 px-2 py-1 rounded-md border border-blue-500/20">
                         {gallery.access_code}
                       </span>
@@ -389,10 +454,19 @@ export default function AdminDashboard() {
                         <span>Fotos subidas:</span>
                         <span className="text-gray-200">{gallery._count?.photos || 0}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Límite gratuito:</span>
-                        <span className="text-gray-200">{gallery.free_limit}</span>
-                      </div>
+                      {gallery.type === 'FINAL' ? (
+                        <div className="flex justify-between">
+                          <span>Límite gratuito:</span>
+                          <span className="text-gray-200">{gallery.free_limit}</span>
+                        </div>
+                      ) : (
+                        <div className="flex justify-between items-center">
+                          <span>Estado Selección:</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${gallery.status === 'SUBMITTED' ? 'bg-green-900/30 text-green-400 border border-green-500/30' : 'bg-amber-900/30 text-amber-400 border border-amber-500/30'}`}>
+                            {gallery.status === 'SUBMITTED' ? 'ENTREGADO' : 'PENDIENTE'}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex gap-2 flex-wrap">
@@ -416,6 +490,14 @@ export default function AdminDashboard() {
                         Borrar
                       </button>
                     </div>
+                    {gallery.type === 'SELECTION' && gallery.status === 'SUBMITTED' && (
+                      <button 
+                        onClick={() => openSelectionModal(gallery)}
+                        className="w-full mt-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 text-center text-sm py-2 rounded-lg transition-colors border border-purple-500/30 font-medium flex items-center justify-center gap-2"
+                      >
+                        ✅ Ver Fotos Seleccionadas
+                      </button>
+                    )}
                     <button 
                       onClick={() => setActiveGalleryForUpload(gallery)}
                       className="w-full mt-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 text-center text-sm py-2 rounded-lg transition-colors border border-blue-500/20"
@@ -434,6 +516,43 @@ export default function AdminDashboard() {
           <StoreEditor />
         )}
       </div>
+
+      {/* MODAL DE SELECCIÓN */}
+      {viewingSelectionFor && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setViewingSelectionFor(null)}>
+          <div className="bg-gray-900 w-full max-w-2xl p-6 rounded-3xl border border-gray-700 shadow-2xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
+              <h2 className="text-xl font-bold">Selección de: {viewingSelectionFor.name}</h2>
+              <button onClick={() => setViewingSelectionFor(null)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto pr-2">
+              {isLoadingSelections ? (
+                <div className="text-center py-10 text-gray-500">Cargando selecciones...</div>
+              ) : clientSelections.length === 0 ? (
+                <div className="text-center py-10 text-gray-500">El cliente envió su selección vacía o hubo un error.</div>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
+                  {clientSelections.map(s => (
+                    <div key={s.id} className="relative aspect-square bg-black rounded-lg overflow-hidden border border-gray-800">
+                      <img src={s.photo.thumbnail_url} className="w-full h-full object-cover opacity-80" />
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <span className="text-white text-3xl opacity-50 drop-shadow-lg">✅</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-gray-800 text-center">
+              <p className="text-gray-400 mb-4">Total seleccionadas: <strong className="text-white">{clientSelections.length} / {viewingSelectionFor.selection_limit}</strong></p>
+              <button onClick={() => setViewingSelectionFor(null)} className="px-6 py-2 bg-gray-800 text-white rounded-xl hover:bg-gray-700">Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import multer from 'multer';
 
 // Importar controladores
-import { createGallery, updateGallery, deleteGallery, getGallery, getGalleriesByPhotographer, getUnlockedPhotos, verifyAccess } from './controllers/galleryController';
+import { createGallery, updateGallery, deleteGallery, getGallery, getGalleriesByPhotographer, getUnlockedPhotos, verifyAccess, getSelectedPhotos, toggleSelection, submitSelection, getAdminSelection } from './controllers/galleryController';
 import { uploadPhotos } from './controllers/photoController';
 import { downloadFreePhotos } from './controllers/downloadController';
 import { createPreference, verifyPayment, mpWebhook } from './controllers/paymentController';
@@ -48,6 +48,10 @@ app.put('/api/galleries/:id', authenticateJWT, updateGallery);
 app.delete('/api/galleries/:id', authenticateJWT, deleteGallery);
 app.get('/api/galleries/:access_code', getGallery);
 app.get('/api/galleries/:id/unlocked', authenticateJWT, getUnlockedPhotos);
+app.get('/api/galleries/:id/selections', authenticateJWT, getSelectedPhotos);
+app.get('/api/admin/galleries/:id/selections', authenticateJWT, getAdminSelection);
+app.post('/api/galleries/select', authenticateJWT, toggleSelection);
+app.post('/api/galleries/submit-selection', authenticateJWT, submitSelection);
 app.get('/api/photographers/:id/galleries', authenticateJWT, getGalleriesByPhotographer);
 app.post('/api/galleries/:access_code/access', authenticateJWT, verifyAccess);
 

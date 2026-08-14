@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import PhotoGrid from '@/components/PhotoGrid';
+import SelectionGrid from '@/components/SelectionGrid';
 
 interface Photo {
   id: number;
@@ -14,6 +15,9 @@ interface Gallery {
   name: string;
   free_limit: number;
   extra_photo_price: number;
+  type: string;
+  status: string;
+  selection_limit: number;
   photos: Photo[];
 }
 
@@ -215,13 +219,23 @@ export default function GalleryPage({ params }: { params: Promise<{ access_code:
       </header>
 
       <main className="p-4 md:p-8 max-w-[1400px] mx-auto">
-        <PhotoGrid 
-          photos={gallery.photos} 
-          freeLimit={gallery.free_limit} 
-          extraPrice={gallery.extra_photo_price} 
-          galleryId={gallery.id}
-          clientEmail={email}
-        />
+        {gallery.type === 'SELECTION' ? (
+          <SelectionGrid 
+            photos={gallery.photos}
+            selectionLimit={gallery.selection_limit}
+            galleryId={gallery.id}
+            clientEmail={email}
+            galleryStatus={gallery.status}
+          />
+        ) : (
+          <PhotoGrid 
+            photos={gallery.photos} 
+            freeLimit={gallery.free_limit} 
+            extraPrice={gallery.extra_photo_price} 
+            galleryId={gallery.id}
+            clientEmail={email}
+          />
+        )}
       </main>
     </div>
   );

@@ -4,7 +4,7 @@ import { generateSecureDownloadUrl, deleteFilesBatch } from '../services/storage
 
 export const createGallery = async (req: Request, res: Response) => {
   try {
-    const { name, free_limit, extra_photo_price, expires_at, max_clients_allowed } = req.body;
+    const { name, free_limit, extra_photo_price, expires_at, max_clients_allowed, type, selection_limit } = req.body;
     const photographer_id = (req as any).user?.id;
 
     if (!photographer_id) return res.status(401).json({ error: 'No autorizado' });
@@ -16,10 +16,13 @@ export const createGallery = async (req: Request, res: Response) => {
         photographer_id: parseInt(photographer_id),
         name,
         access_code,
-        free_limit: parseInt(free_limit),
-        extra_photo_price: parseFloat(extra_photo_price),
+        free_limit: parseInt(free_limit || 0),
+        extra_photo_price: parseFloat(extra_photo_price || 0),
         expires_at: new Date(expires_at),
-        max_clients_allowed: max_clients_allowed ? parseInt(max_clients_allowed) : 0
+        max_clients_allowed: max_clients_allowed ? parseInt(max_clients_allowed) : 0,
+        type: type || 'FINAL',
+        selection_limit: selection_limit ? parseInt(selection_limit) : 0,
+        status: 'PENDING'
       }
     });
 
@@ -176,7 +179,7 @@ export const updateGallery = async (req: Request, res: Response) => {
     const photographer_id = (req as any).user?.id;
     if (!photographer_id) return res.status(401).json({ error: 'No autorizado' });
 
-    const { name, free_limit, extra_photo_price, expires_at, max_clients_allowed } = req.body;
+    const { name, free_limit, extra_photo_price, expires_at, max_clients_allowed, type, selection_limit } = req.body;
 
     const gallery = await prisma.gallery.findUnique({ where: { id: galleryId } });
     if (!gallery || gallery.photographer_id !== photographer_id) {
@@ -187,10 +190,12 @@ export const updateGallery = async (req: Request, res: Response) => {
       where: { id: galleryId },
       data: {
         name,
-        free_limit: parseInt(free_limit),
-        extra_photo_price: parseFloat(extra_photo_price),
+        free_limit: parseInt(free_limit || 0),
+        extra_photo_price: parseFloat(extra_photo_price || 0),
         expires_at: new Date(expires_at),
-        max_clients_allowed: max_clients_allowed ? parseInt(max_clients_allowed) : 0
+        max_clients_allowed: max_clients_allowed ? parseInt(max_clients_allowed) : 0,
+        type: type || gallery.type,
+        selection_limit: selection_limit !== undefined ? parseInt(selection_limit) : gallery.selection_limit,
       }
     });
 
@@ -262,5 +267,103 @@ export const getGalleriesByPhotographer = async (req: Request, res: Response) =>
   } catch (error) {
     console.error('Error fetching galleries:', error);
     res.status(500).json({ error: 'Error fetching galleries' });
+  }
+};
+
+export const getSelectedPhotos = async (req: Request, res: Response) => {
+  try {
+    const gallery_id = parseInt(req.params.id as string);
+    const client_id = (req as any).user?.id;
+
+    if (!client_id) return res.status(401).json({ error: 'No autorizado' });
+
+    const selectedPhotos = await prisma.selectedPhoto.findMany({
+      where: { client_id, gallery_id },
+      select: { photo_id: true }
+    });
+
+    const selectedIds = selectedPhotos.map((s: any) => s.photo_id);
+    res.status(200).json({ selectedIds });
+  } catch (error) {
+    res.status(500).json({ error: 'Error interno' });
+  }
+};
+
+export const toggleSelection = async (req: Request, res: Response) => {
+  try {
+    const { gallery_id, photo_id } = req.body;
+    const client_id = (req as any).user?.id;
+
+    if (!client_id) return res.status(401).json({ error: 'No autorizado' });
+
+    const gallery = await prisma.gallery.findUnique({ where: { id: gallery_id } });
+    if (!gallery) return res.status(404).json({ error: 'Galería no encontrada' });
+    if (gallery.status === 'SUBMITTED') return res.status(400).json({ error: 'La selección ya fue enviada' });
+
+    const existing = await prisma.selectedPhoto.findUnique({
+      where: {
+        client_id_photo_id: { client_id, photo_id }
+      }
+    });
+
+    if (existing) {
+      await prisma.selectedPhoto.delete({ where: { id: existing.id } });
+      return res.status(200).json({ action: 'removed' });
+    } else {
+      const currentCount = await prisma.selectedPhoto.count({ where: { client_id, gallery_id } });
+      if (currentCount >= gallery.selection_limit) {
+        return res.status(400).json({ error: `Límite alcanzado (${gallery.selection_limit} fotos).` });
+      }
+
+      await prisma.selectedPhoto.create({
+        data: { client_id, gallery_id, photo_id }
+      });
+      return res.status(200).json({ action: 'added' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Error interno' });
+  }
+};
+
+export const submitSelection = async (req: Request, res: Response) => {
+  try {
+    const { gallery_id } = req.body;
+    const client_id = (req as any).user?.id;
+
+    if (!client_id) return res.status(401).json({ error: 'No autorizado' });
+
+    await prisma.gallery.update({
+      where: { id: gallery_id },
+      data: { status: 'SUBMITTED' }
+    });
+
+    res.status(200).json({ message: 'Selección enviada con éxito' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error interno' });
+  }
+};
+
+export const getAdminSelection = async (req: Request, res: Response) => {
+  try {
+    const gallery_id = parseInt(req.params.id as string);
+    const photographer_id = (req as any).user?.id;
+    if (!photographer_id) return res.status(401).json({ error: 'No autorizado' });
+
+    const gallery = await prisma.gallery.findUnique({ where: { id: gallery_id } });
+    if (!gallery || gallery.photographer_id !== photographer_id) {
+      return res.status(403).json({ error: 'No autorizado' });
+    }
+
+    const selections = await prisma.selectedPhoto.findMany({
+      where: { gallery_id },
+      include: {
+        photo: { select: { thumbnail_url: true, folder: true } },
+        client: { select: { email: true } }
+      }
+    });
+
+    res.status(200).json({ selections });
+  } catch (error) {
+    res.status(500).json({ error: 'Error interno' });
   }
 };

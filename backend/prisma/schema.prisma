@@ -24,6 +24,7 @@ model Client {
   transactions    Transaction[]
   unlocked_photos UnlockedPhoto[]
   gallery_accesses GalleryAccess[]
+  selected_photos SelectedPhoto[]
 }
 
 model Gallery {
@@ -34,11 +35,27 @@ model Gallery {
   access_code       String        @unique
   free_limit        Int
   extra_photo_price Decimal
+  type              String        @default("FINAL") // "FINAL" o "SELECTION"
+  status            String        @default("PENDING") // "PENDING", "SUBMITTED"
+  selection_limit   Int           @default(0) // Cuántas fotos puede elegir si es tipo SELECTION
   expires_at        DateTime
   max_clients_allowed Int           @default(0) // 0 significa sin límite
   photos            Photo[]
   transactions      Transaction[]
   accesses          GalleryAccess[]
+  selected_photos   SelectedPhoto[]
+}
+
+model SelectedPhoto {
+  id         Int      @id @default(autoincrement())
+  gallery_id Int
+  gallery    Gallery  @relation(fields: [gallery_id], references: [id], onDelete: Cascade)
+  photo_id   Int
+  photo      Photo    @relation(fields: [photo_id], references: [id], onDelete: Cascade)
+  client_id  Int
+  client     Client   @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  
+  @@unique([client_id, photo_id])
 }
 
 model GalleryAccess {
@@ -60,6 +77,7 @@ model Photo {
   high_res_key    String
   folder          String          @default("General")
   unlocked_photos UnlockedPhoto[]
+  selected_photos SelectedPhoto[]
 }
 
 model Transaction {
