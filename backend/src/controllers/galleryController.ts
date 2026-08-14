@@ -362,7 +362,24 @@ export const getAdminSelection = async (req: Request, res: Response) => {
       }
     });
 
-    res.status(200).json({ selections });
+    const selectionsWithSignedUrls = await Promise.all(
+      selections.map(async (selection: any) => {
+        let key = selection.photo.thumbnail_url;
+        if (key.includes('pub-your-public-r2-url.r2.dev/')) {
+          key = key.split('.dev/')[1];
+        }
+        const signedUrl = await generateSecureDownloadUrl(key);
+        return {
+          ...selection,
+          photo: {
+            ...selection.photo,
+            thumbnail_url: signedUrl
+          }
+        };
+      })
+    );
+
+    res.status(200).json({ selections: selectionsWithSignedUrls });
   } catch (error) {
     res.status(500).json({ error: 'Error interno' });
   }
