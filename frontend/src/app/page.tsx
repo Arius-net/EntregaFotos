@@ -129,7 +129,7 @@ export default function LandingPage() {
                 <img 
                   src={settings.about_image_url}
                   alt="El Fotógrafo" 
-                  className="relative rounded-3xl shadow-2xl object-cover w-full h-[500px] border border-white/10"
+                  className="relative rounded-3xl shadow-2xl object-cover w-full h-auto border border-white/10"
                 />
               ) : (
                 <div className="relative rounded-3xl shadow-2xl w-full h-[500px] border border-white/10 bg-[#171c54]/30 flex items-center justify-center">
