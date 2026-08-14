@@ -56,9 +56,11 @@ export const getStoreItems = async (req: Request, res: Response) => {
       orderBy: { created_at: 'desc' }
     });
 
-    // Firmar URLs para el frontend
+    // Firmar URLs para el frontend (si no son URLs externas de mock)
     const signedItems = await Promise.all(items.map(async (item: any) => {
-      const signedUrl = await generateSecureDownloadUrl(item.thumbnail_url);
+      const signedUrl = item.thumbnail_url.startsWith('http') 
+        ? item.thumbnail_url 
+        : await generateSecureDownloadUrl(item.thumbnail_url);
       return { ...item, thumbnail_url: signedUrl };
     }));
 
