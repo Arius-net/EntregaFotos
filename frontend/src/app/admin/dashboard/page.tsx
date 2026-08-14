@@ -532,10 +532,10 @@ export default function AdminDashboard() {
               ) : clientSelections.length === 0 ? (
                 <div className="text-center py-10 text-gray-500">El cliente envió su selección vacía o hubo un error.</div>
               ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
+                <div className="columns-2 sm:columns-3 md:columns-4 gap-4 space-y-4">
                   {clientSelections.map(s => (
-                    <div key={s.id} className="relative aspect-square bg-black rounded-lg overflow-hidden border border-gray-800 group">
-                      <img src={s.photo.thumbnail_url} className="w-full h-full object-cover opacity-80" />
+                    <div key={s.id} className="relative break-inside-avoid bg-black rounded-lg overflow-hidden border border-gray-800 group">
+                      <img src={s.photo.thumbnail_url} className="w-full h-auto object-cover opacity-80" />
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <span className="text-white text-3xl opacity-50 drop-shadow-lg">✅</span>
                       </div>

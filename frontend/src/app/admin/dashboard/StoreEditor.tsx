@@ -242,11 +242,11 @@ export default function StoreEditor() {
             Aún no has subido fotos a la tienda.
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
             {items.map(item => (
-              <div key={item.id} className={`relative bg-gray-950 rounded-xl overflow-hidden border ${item.is_active ? 'border-gray-800' : 'border-red-900/50 opacity-75'}`}>
-                <div className="aspect-[4/5] relative group">
-                  <img src={item.thumbnail_url} alt={item.title} className="w-full h-full object-cover" />
+              <div key={item.id} className={`bg-gray-950 rounded-xl overflow-hidden border ${item.is_active ? 'border-gray-800' : 'border-red-900/50 opacity-75'} break-inside-avoid`}>
+                <div className="relative group">
+                  <img src={item.thumbnail_url} alt={item.title} className="w-full h-auto object-cover" />
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-wrap items-center justify-center gap-2 p-2">
                     <button 
                       onClick={() => toggleActive(item.id, item.is_active)}

@@ -268,10 +268,10 @@ export default function LandingEditor() {
               Añadir Fotos
             </button>
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-2">
+          <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar items-start">
             {settings.hero_images?.map((key, idx) => (
-              <div key={key} className="relative group min-w-[100px] h-[70px] rounded-lg overflow-hidden border border-gray-700 bg-gray-800">
-                <img src={settings.hero_images_urls?.[idx] || ''} alt="Hero" className="w-full h-full object-cover" />
+              <div key={key} className="relative group w-48 shrink-0 rounded-lg overflow-hidden border border-gray-700 bg-gray-800">
+                <img src={settings.hero_images_urls?.[idx] || ''} alt="Hero" className="w-full h-auto object-cover" />
                 <button type="button" onClick={() => removeImage('hero', idx)} className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
                   ✕
                 </button>
@@ -318,10 +318,10 @@ export default function LandingEditor() {
           </div>
 
           <div>
-            <label className="text-sm text-gray-400 block mb-1">Foto de Perfil</label>
-            <div className="w-full aspect-[3/4] bg-gray-900 border-2 border-dashed border-gray-700 rounded-xl relative overflow-hidden flex flex-col items-center justify-center">
+            <label className="text-sm text-gray-400 block mb-1">Foto de Perfil (Se adapta a tu foto)</label>
+            <div className="w-full min-h-[250px] bg-gray-900 border-2 border-dashed border-gray-700 rounded-xl relative overflow-hidden flex flex-col items-center justify-center group">
               {settings.about_image_url ? (
-                <img src={settings.about_image_url} alt="Perfil" className="w-full h-full object-cover" />
+                <img src={settings.about_image_url} alt="Perfil" className="w-full h-auto object-cover" />
               ) : (
                 <span className="text-gray-500 text-sm">Sin imagen</span>
               )}
@@ -344,10 +344,10 @@ export default function LandingEditor() {
           </button>
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className="columns-2 md:columns-4 lg:columns-5 gap-4 space-y-4">
           {settings.portfolio_images?.map((key, idx) => (
-            <div key={key} className="relative group aspect-square rounded-lg overflow-hidden border border-gray-700 bg-gray-800">
-              <img src={settings.portfolio_images_urls?.[idx] || ''} alt="Portafolio" className="w-full h-full object-cover" />
+            <div key={key} className="relative group break-inside-avoid rounded-lg overflow-hidden border border-gray-700 bg-gray-800">
+              <img src={settings.portfolio_images_urls?.[idx] || ''} alt="Portafolio" className="w-full h-auto object-cover" />
               <button type="button" onClick={() => removeImage('portfolio', idx)} className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
                 ✕
               </button>
