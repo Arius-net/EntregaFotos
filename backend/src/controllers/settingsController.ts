@@ -22,6 +22,10 @@ export const getSettings = async (req: Request, res: Response) => {
       signedSettings.about_image_url = await generateSecureDownloadUrl(settings.about_image);
     }
 
+    if (settings.logo_image) {
+      signedSettings.logo_image_url = await generateSecureDownloadUrl(settings.logo_image);
+    }
+
     if (settings.hero_images && settings.hero_images.length > 0) {
       signedSettings.hero_images_urls = await Promise.all(
         settings.hero_images.map(key => generateSecureDownloadUrl(key))

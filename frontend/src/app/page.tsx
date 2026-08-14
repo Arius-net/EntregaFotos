@@ -22,7 +22,6 @@ const PORTFOLIO_IMAGES = [
 
 export default function LandingPage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
-  const [accessCode, setAccessCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [settings, setSettings] = useState<any>(null);
@@ -45,24 +44,7 @@ export default function LandingPage() {
     return () => clearInterval(timer);
   }, [currentHeroImages.length]);
 
-  const handleAccess = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!accessCode.trim()) return;
-
-    setIsLoading(true);
-    try {
-      const res = await fetch(`${API_URL}/api/galleries/${accessCode.toUpperCase()}`);
-      if (res.ok) {
-        router.push(`/gallery/${accessCode.toUpperCase()}`);
-      } else {
-        toast.error('Código de galería incorrecto o expirado.');
-        setIsLoading(false);
-      }
-    } catch (e) {
-      toast.error('Error de conexión');
-      setIsLoading(false);
-    }
-  };
+  // Se eliminó handleAccess porque ahora vive en /portal
 
   const nextSlide = () => setCurrentSlide((p) => (p + 1) % currentHeroImages.length);
   const prevSlide = () => setCurrentSlide((p) => (p - 1 + currentHeroImages.length) % currentHeroImages.length);
@@ -75,20 +57,19 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <div className="flex-shrink-0 cursor-pointer flex items-center gap-3" onClick={() => window.scrollTo(0,0)}>
-              <div className="bg-white/95 p-1.5 rounded-xl shadow-lg">
-                <img src="/logo_symbol.png" alt="Logo" className="h-10 w-10 object-contain" />
+              <div className="bg-white/95 p-1.5 rounded-xl shadow-lg h-12 w-12 flex items-center justify-center overflow-hidden">
+                <img src={settings?.logo_image_url || "/logo_symbol.png"} alt="Logo" className="max-h-full max-w-full object-contain" />
               </div>
               <h1 className="text-xl md:text-2xl font-bold tracking-tighter leading-none hidden sm:block">
-                <span className="text-white">Quevedo</span>
-                <span className="text-[#8892f0]">Contigo</span>
+                <span className="text-white">{settings?.brand_name || 'Quevedo Contigo'}</span>
               </h1>
             </div>
             <div className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-6">
                 <a href="#about" className="hover:text-[#8892f0] px-3 py-2 rounded-md text-sm font-medium transition-colors">Sobre Mí</a>
                 <a href="#portfolio" className="hover:text-[#8892f0] px-3 py-2 rounded-md text-sm font-medium transition-colors">Portafolio</a>
-                <a href="#portal" className="hover:text-[#8892f0] px-3 py-2 rounded-md text-sm font-medium transition-colors">Entregas</a>
-                <a href="#store" className="hover:text-[#8892f0] px-3 py-2 rounded-md text-sm font-medium transition-colors">Tienda</a>
+                <button onClick={() => router.push('/portal')} className="hover:text-[#8892f0] px-3 py-2 rounded-md text-sm font-medium transition-colors">Entregas</button>
+                <button onClick={() => router.push('/store')} className="hover:text-[#8892f0] px-3 py-2 rounded-md text-sm font-medium transition-colors">Tienda</button>
                 <a href="#contact" className="hover:text-[#8892f0] px-3 py-2 rounded-md text-sm font-medium transition-colors">Contacto</a>
               </div>
             </div>
@@ -134,9 +115,9 @@ export default function LandingPage() {
             <a href="#portfolio" className="px-8 py-4 bg-white text-[#171c54] font-bold rounded-full hover:bg-gray-100 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)]">
               Ver Portafolio
             </a>
-            <a href="#portal" className="px-8 py-4 bg-transparent border-2 border-white/50 text-white font-bold rounded-full hover:bg-white/10 hover:border-white transition-all">
+            <button onClick={() => router.push('/portal')} className="px-8 py-4 bg-transparent border-2 border-white/50 text-white font-bold rounded-full hover:bg-white/10 hover:border-white transition-all">
               Zona de Clientes
-            </a>
+            </button>
           </div>
         </div>
 
@@ -203,8 +184,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CLIENT PORTAL SECTION */}
-      <section id="portal" className="py-24 relative overflow-hidden bg-[#0d1024] scroll-mt-20">
+      {/* CLIENT PORTAL CTA */}
+      <section className="py-24 relative overflow-hidden bg-[#0d1024]">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#171c54] rounded-full filter blur-[120px] opacity-40"></div>
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#282e70] rounded-full filter blur-[120px] opacity-30"></div>
 
@@ -215,41 +196,12 @@ export default function LandingPage() {
           </div>
           <h3 className="text-4xl md:text-5xl font-bold mb-6">Tus recuerdos, listos.</h3>
           <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
-            Ingresa el código único que te he proporcionado para acceder a tu galería privada, seleccionar tus fotos favoritas y descargarlas en alta resolución.
+            Si ya tuvimos una sesión, accede a tu portal privado para seleccionar tus fotos favoritas o descargar tu galería final.
           </p>
 
-          <div className="bg-[#171c54]/40 backdrop-blur-xl border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden max-w-lg mx-auto">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#282e70] to-[#8892f0]"></div>
-            
-            <form onSubmit={handleAccess} className="space-y-6">
-              <div>
-                <label className="text-sm text-gray-300 font-medium block mb-3 text-left">Código de Galería</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Lock size={20} className="text-gray-500" />
-                  </div>
-                  <input 
-                    type="text" 
-                    placeholder="Ej: BODA-2026"
-                    className="w-full bg-[#0a0c1a] border border-[#282e70] rounded-xl pl-12 pr-4 py-4 text-xl tracking-widest font-mono text-white focus:outline-none focus:border-[#8892f0] focus:ring-1 focus:ring-[#8892f0] transition-all uppercase placeholder:text-gray-600"
-                    value={accessCode}
-                    onChange={(e) => setAccessCode(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              <button 
-                type="submit" 
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-[#171c54] to-[#282e70] hover:from-[#282e70] hover:to-[#38419c] disabled:opacity-50 border border-white/10 text-white font-semibold py-4 rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 group"
-              >
-                {isLoading ? 'Verificando...' : (
-                  <>Acceder a mi Galería <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" /></>
-                )}
-              </button>
-            </form>
-          </div>
+          <button onClick={() => router.push('/portal')} className="bg-gradient-to-r from-[#171c54] to-[#282e70] hover:from-[#282e70] hover:to-[#38419c] text-white font-bold text-lg py-5 px-10 rounded-xl shadow-[0_0_30px_rgba(40,46,112,0.4)] transition-all active:scale-95 flex items-center justify-center gap-3 mx-auto group">
+            Entrar al Portal de Clientes <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />
+          </button>
         </div>
       </section>
 
@@ -332,31 +284,30 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-12">
             
             <div className="flex items-center gap-4">
-              <div className="bg-white/95 p-1.5 rounded-xl shadow-lg">
-                <img src="/logo_symbol.png" alt="Logo" className="h-12 w-12 object-contain" />
+              <div className="bg-white/95 p-1.5 rounded-xl shadow-lg h-14 w-14 flex items-center justify-center overflow-hidden">
+                <img src={settings?.logo_image_url || "/logo_symbol.png"} alt="Logo" className="max-h-full max-w-full object-contain" />
               </div>
-              <h4 className="text-3xl font-bold tracking-tighter leading-none">
-                <span className="text-white">Quevedo</span><br/>
-                <span className="text-[#8892f0]">Contigo</span>
+              <h4 className="text-3xl font-bold tracking-tighter leading-none text-white">
+                {settings?.brand_name || 'Quevedo Contigo'}
               </h4>
             </div>
 
             <ul className="flex flex-wrap justify-center gap-6 text-sm">
               <li><a href="#about" className="text-gray-400 hover:text-white transition-colors">Sobre Mí</a></li>
               <li><a href="#portfolio" className="text-gray-400 hover:text-white transition-colors">Portafolio</a></li>
-              <li><a href="#portal" className="text-gray-400 hover:text-white transition-colors">Entregas</a></li>
-              <li><a href="#store" className="text-gray-400 hover:text-white transition-colors">Tienda</a></li>
+              <li><button onClick={() => router.push('/portal')} className="text-gray-400 hover:text-white transition-colors">Entregas</button></li>
+              <li><button onClick={() => router.push('/store')} className="text-gray-400 hover:text-white transition-colors">Tienda</button></li>
               <li><a href="/admin/dashboard" className="text-[#8892f0] hover:text-white transition-colors font-medium">Panel Admin</a></li>
             </ul>
           </div>
 
           <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-500 text-sm">
-              &copy; {new Date().getFullYear()} Quevedo Contigo Fotografía. Todos los derechos reservados.
+              &copy; {new Date().getFullYear()} {settings?.brand_name || 'Quevedo Contigo'}. Todos los derechos reservados.
             </p>
             <div className="flex gap-4 text-sm text-gray-500">
-              <a href="#" className="hover:text-white transition-colors">Aviso de Privacidad</a>
-              <a href="#" className="hover:text-white transition-colors">Términos y Condiciones</a>
+              <button onClick={() => router.push('/legal/privacidad')} className="hover:text-white transition-colors">Aviso de Privacidad</button>
+              <button onClick={() => router.push('/legal/terminos')} className="hover:text-white transition-colors">Términos y Condiciones</button>
             </div>
           </div>
         </div>

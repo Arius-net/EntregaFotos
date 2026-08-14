@@ -4,6 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 interface LandingSettings {
+  brand_name: string;
+  logo_image: string;
+  logo_image_url?: string;
+
   hero_title: string;
   hero_subtitle: string;
   hero_description: string;
@@ -24,6 +28,9 @@ interface LandingSettings {
   instagram_url: string;
   facebook_url: string;
   location_text: string;
+
+  privacy_policy: string;
+  terms_conditions: string;
 }
 
 export default function LandingEditor() {
@@ -34,7 +41,7 @@ export default function LandingEditor() {
   
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadTarget, setUploadTarget] = useState<'hero' | 'about' | 'portfolio' | null>(null);
+  const [uploadTarget, setUploadTarget] = useState<'hero' | 'about' | 'portfolio' | 'logo' | null>(null);
 
   useEffect(() => {
     fetchSettings();
@@ -66,6 +73,7 @@ export default function LandingEditor() {
       delete dataToSave.hero_images_urls;
       delete dataToSave.about_image_url;
       delete dataToSave.portfolio_images_urls;
+      delete dataToSave.logo_image_url;
 
       const res = await fetch(`${API_URL}/api/settings/landing`, {
         method: 'PUT',
@@ -89,7 +97,7 @@ export default function LandingEditor() {
     }
   };
 
-  const triggerUpload = (target: 'hero' | 'about' | 'portfolio') => {
+  const triggerUpload = (target: 'hero' | 'about' | 'portfolio' | 'logo') => {
     setUploadTarget(target);
     fileInputRef.current?.click();
   };
@@ -131,6 +139,8 @@ export default function LandingEditor() {
         newSettings.portfolio_images = [...(newSettings.portfolio_images || []), ...uploadedKeys];
       } else if (uploadTarget === 'about') {
         newSettings.about_image = uploadedKeys[0]; // Replace single image
+      } else if (uploadTarget === 'logo') {
+        newSettings.logo_image = uploadedKeys[0]; // Replace logo
       }
 
       setSettings(newSettings);
@@ -176,12 +186,46 @@ export default function LandingEditor() {
 
       <input 
         type="file" 
-        multiple={uploadTarget !== 'about'} 
+        multiple={uploadTarget === 'hero' || uploadTarget === 'portfolio'} 
         accept="image/jpeg, image/png, image/webp" 
         className="hidden" 
         ref={fileInputRef}
         onChange={handleFileUpload}
       />
+
+      {/* SECCIÓN IDENTIDAD DE MARCA */}
+      <div className="bg-gray-950 p-6 rounded-xl border border-gray-800">
+        <h3 className="text-xl font-semibold mb-4 text-white border-b border-gray-800 pb-2">Identidad de Marca</h3>
+        
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <label className="text-sm text-gray-400 block mb-1">Nombre de la Marca</label>
+            <input 
+              type="text" 
+              value={settings.brand_name || ''}
+              onChange={e => setSettings({...settings, brand_name: e.target.value})}
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white"
+            />
+            <p className="text-xs text-gray-500 mt-2">Este nombre aparecerá en la barra de navegación y pie de página.</p>
+          </div>
+
+          <div>
+            <label className="text-sm text-gray-400 block mb-1">Logotipo (Fondo transparente recomendado)</label>
+            <div className="w-full h-[100px] bg-gray-900 border-2 border-dashed border-gray-700 rounded-xl relative overflow-hidden flex flex-col items-center justify-center group">
+              {settings.logo_image_url ? (
+                <img src={settings.logo_image_url} alt="Logo" className="h-full w-auto object-contain p-2" />
+              ) : (
+                <span className="text-gray-500 text-sm">Sin logotipo</span>
+              )}
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <button type="button" onClick={() => triggerUpload('logo')} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
+                  Subir Logo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* SECCIÓN HERO */}
       <div className="bg-gray-950 p-6 rounded-xl border border-gray-800">
@@ -363,6 +407,33 @@ export default function LandingEditor() {
               value={settings.location_text}
               onChange={e => setSettings({...settings, location_text: e.target.value})}
               className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* SECCIÓN LEGAL */}
+      <div className="bg-gray-950 p-6 rounded-xl border border-gray-800">
+        <h3 className="text-xl font-semibold mb-4 text-white border-b border-gray-800 pb-2">Marco Legal</h3>
+        <p className="text-sm text-gray-400 mb-6">Estos textos se mostrarán en sus respectivas páginas (ej. /legal/privacidad) y estarán enlazados en el pie de página de tu sitio.</p>
+        
+        <div className="space-y-6">
+          <div>
+            <label className="text-sm text-gray-400 block mb-1">Aviso de Privacidad (Soporta Markdown)</label>
+            <textarea 
+              value={settings.privacy_policy || ''}
+              onChange={e => setSettings({...settings, privacy_policy: e.target.value})}
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white h-40 font-mono text-sm"
+              placeholder="# Aviso de Privacidad..."
+            />
+          </div>
+          <div>
+            <label className="text-sm text-gray-400 block mb-1">Términos y Condiciones (Soporta Markdown)</label>
+            <textarea 
+              value={settings.terms_conditions || ''}
+              onChange={e => setSettings({...settings, terms_conditions: e.target.value})}
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white h-40 font-mono text-sm"
+              placeholder="# Términos y Condiciones..."
             />
           </div>
         </div>

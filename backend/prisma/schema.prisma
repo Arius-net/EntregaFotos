@@ -124,12 +124,20 @@ model LandingSettings {
   // Portafolio (Manual)
   portfolio_images    String[]
   
+  // Identidad de Marca
+  brand_name          String   @default("Quevedo Contigo")
+  logo_image          String   @default("")
+
   // Contacto & Redes
   whatsapp_number     String   @default("521234567890")
   email               String   @default("contacto@quevedocontigo.com")
   instagram_url       String   @default("#")
   facebook_url        String   @default("#")
   location_text       String   @default("México")
+
+  // Legal
+  privacy_policy      String   @db.Text @default("")
+  terms_conditions    String   @db.Text @default("")
 
   updated_at          DateTime @updatedAt
 }
