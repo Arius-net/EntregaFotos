@@ -266,7 +266,7 @@ export default function LandingPage() {
               <p className="text-gray-400 text-lg mb-8 leading-relaxed">
                 Descubre mi colección exclusiva de fotografías de naturaleza, paisajes urbanos y arte abstracto, optimizadas perfectamente como fondos de pantalla premium para tu celular.
               </p>
-              <button onClick={() => window.open('#', '_blank')} className="px-8 py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-colors flex items-center gap-2">
+              <button onClick={() => router.push('/store')} className="px-8 py-4 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-colors flex items-center gap-2">
                 Explorar Colección <ArrowRight size={20} />
               </button>
             </div>

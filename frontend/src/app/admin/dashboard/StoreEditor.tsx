@@ -24,6 +24,12 @@ export default function StoreEditor() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Edit Modal State
+  const [editingItem, setEditingItem] = useState<StoreItem | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+
   useEffect(() => {
     fetchItems();
   }, []);
@@ -127,6 +133,41 @@ export default function StoreEditor() {
     }
   };
 
+  const openEditModal = (item: StoreItem) => {
+    setEditingItem(item);
+    setEditTitle(item.title);
+    setEditDescription(item.description);
+    setEditPrice(item.price);
+  };
+
+  const saveEdit = async () => {
+    if (!editingItem) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/store/${editingItem.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: editTitle,
+          description: editDescription,
+          price: editPrice
+        })
+      });
+      if (res.ok) {
+        toast.success('Foto actualizada');
+        fetchItems();
+        setEditingItem(null);
+      } else {
+        toast.error('Error al actualizar');
+      }
+    } catch (error) {
+      toast.error('Error de red');
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Formulario de Subida */}
@@ -206,17 +247,24 @@ export default function StoreEditor() {
               <div key={item.id} className={`relative bg-gray-950 rounded-xl overflow-hidden border ${item.is_active ? 'border-gray-800' : 'border-red-900/50 opacity-75'}`}>
                 <div className="aspect-[4/5] relative group">
                   <img src={item.thumbnail_url} alt={item.title} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-wrap items-center justify-center gap-2 p-2">
                     <button 
                       onClick={() => toggleActive(item.id, item.is_active)}
-                      className="bg-gray-800 hover:bg-gray-700 text-white p-2 rounded-full text-xs"
+                      className="bg-gray-800 hover:bg-gray-700 text-white p-2 rounded-full text-xs transition-colors shadow-lg"
                       title={item.is_active ? 'Ocultar de la tienda' : 'Mostrar en la tienda'}
                     >
                       {item.is_active ? '👁️' : '🙈'}
                     </button>
                     <button 
+                      onClick={() => openEditModal(item)}
+                      className="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-full text-xs transition-colors shadow-lg"
+                      title="Editar foto"
+                    >
+                      ✏️
+                    </button>
+                    <button 
                       onClick={() => handleDelete(item.id)}
-                      className="bg-red-600 hover:bg-red-500 text-white p-2 rounded-full text-xs"
+                      className="bg-red-600 hover:bg-red-500 text-white p-2 rounded-full text-xs transition-colors shadow-lg"
                       title="Eliminar permanentemente"
                     >
                       🗑️
@@ -233,6 +281,61 @@ export default function StoreEditor() {
           </div>
         )}
       </div>
+
+      {/* Edit Modal */}
+      {editingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setEditingItem(null)}>
+          <div className="bg-[#111322] w-full max-w-md p-6 md:p-8 rounded-3xl border border-white/10" onClick={e => e.stopPropagation()}>
+            <h2 className="text-2xl font-bold mb-6 text-white">Editar Foto</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-gray-400 block mb-1">Título</label>
+                <input 
+                  type="text" 
+                  value={editTitle}
+                  onChange={e => setEditTitle(e.target.value)}
+                  className="w-full bg-[#0a0c1a] border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 block mb-1">Precio ($)</label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  value={editPrice}
+                  onChange={e => setEditPrice(e.target.value)}
+                  className="w-full bg-[#0a0c1a] border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 block mb-1">Descripción</label>
+                <textarea 
+                  value={editDescription}
+                  onChange={e => setEditDescription(e.target.value)}
+                  className="w-full bg-[#0a0c1a] border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 focus:outline-none h-24"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-4 mt-8">
+              <button 
+                onClick={() => setEditingItem(null)}
+                className="w-1/2 py-3 rounded-xl border border-gray-600 text-gray-300 hover:bg-gray-800 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={saveEdit}
+                className="w-1/2 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-500 transition-colors"
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

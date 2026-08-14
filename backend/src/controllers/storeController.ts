@@ -46,10 +46,17 @@ export const createStoreItem = async (req: Request, res: Response) => {
 
 export const getStoreItems = async (req: Request, res: Response) => {
   try {
-    // Si req.user existe y es admin, quizá devolvemos is_active = false también, 
-    // pero por ahora devolvemos todos. Si es public, solo is_active = true.
-    // Como es simple, devolvemos todo y el frontend filtra si hace falta, o pedimos parámetro.
-    const isAdmin = (req as any).user?.role === 'photographer';
+    let isAdmin = false;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        const decoded = require('jsonwebtoken').verify(token, process.env.JWT_SECRET || 'secret_key_123');
+        if (decoded.role === 'photographer') {
+          isAdmin = true;
+        }
+      } catch (e) {}
+    }
     
     const items = await prisma.storeItem.findMany({
       where: isAdmin ? undefined : { is_active: true },
