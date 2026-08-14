@@ -5,20 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Camera, MessageCircle, ArrowRight, Image as ImageIcon, Store, ChevronRight, ChevronLeft, Lock, Mail, MapPin } from 'lucide-react';
 
-const HERO_IMAGES = [
-  '/hero_wedding_1786601115161.png',
-  '/hero_concert_1786601134635.png',
-  '/hero_portrait_1786601277435.png'
-];
 
-const PORTFOLIO_IMAGES = [
-  '/hero_wedding_1786601115161.png',
-  '/photographer_profile_1786601309429.png',
-  '/hero_concert_1786601134635.png',
-  '/wallpapers_store_1786601317099.png',
-  '/hero_portrait_1786601277435.png',
-  '/hero_wedding_1786601115161.png'
-];
 
 export default function LandingPage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
@@ -34,8 +21,8 @@ export default function LandingPage() {
       .catch(err => console.error(err));
   }, []);
 
-  const currentHeroImages = settings?.hero_images_urls?.length ? settings.hero_images_urls : HERO_IMAGES;
-  const currentPortfolioImages = settings?.portfolio_images_urls?.length ? settings.portfolio_images_urls : PORTFOLIO_IMAGES;
+  const currentHeroImages = settings?.hero_images_urls?.length ? settings.hero_images_urls : [];
+  const currentPortfolioImages = settings?.portfolio_images_urls?.length ? settings.portfolio_images_urls : [];
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -138,11 +125,17 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center gap-16">
             <div className="md:w-1/2 relative">
               <div className="absolute -inset-4 bg-gradient-to-tr from-[#171c54] to-[#282e70] rounded-3xl opacity-50 blur-2xl"></div>
-              <img 
-                src={settings?.about_image_url || "/photographer_profile_1786601309429.png"}
-                alt="El Fotógrafo" 
-                className="relative rounded-3xl shadow-2xl object-cover w-full h-[500px] border border-white/10"
-              />
+              {settings?.about_image_url ? (
+                <img 
+                  src={settings.about_image_url}
+                  alt="El Fotógrafo" 
+                  className="relative rounded-3xl shadow-2xl object-cover w-full h-[500px] border border-white/10"
+                />
+              ) : (
+                <div className="relative rounded-3xl shadow-2xl w-full h-[500px] border border-white/10 bg-[#171c54]/30 flex items-center justify-center">
+                  <Camera size={48} className="text-gray-500 opacity-50" />
+                </div>
+              )}
             </div>
             <div className="md:w-1/2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#171c54] border border-[#282e70] text-sm text-[#aab2fc] font-medium mb-6">
@@ -222,12 +215,11 @@ export default function LandingPage() {
                 Explorar Colección <ArrowRight size={20} />
               </button>
             </div>
-            <div className="lg:w-1/2 w-full h-full min-h-[400px] relative">
-               <img 
-                 src="/wallpapers_store_1786601317099.png" 
-                 alt="Tienda de Fondos" 
-                 className="absolute inset-0 w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity duration-500"
-               />
+            <div className="lg:w-1/2 w-full h-full min-h-[400px] relative bg-gradient-to-tr from-[#0a0c1a] to-[#171c54]">
+               {/* Decorative elements for store CTA */}
+               <div className="absolute inset-0 flex items-center justify-center">
+                 <Store size={100} className="text-white/10" />
+               </div>
                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0c1a] lg:from-transparent via-transparent to-transparent"></div>
             </div>
           </div>
