@@ -25,14 +25,25 @@ export default function LandingPage() {
   const [accessCode, setAccessCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [settings, setSettings] = useState<any>(null);
   const router = useRouter();
 
   useEffect(() => {
+    fetch(`${API_URL}/api/settings/landing`)
+      .then(res => res.json())
+      .then(data => setSettings(data))
+      .catch(err => console.error(err));
+  }, []);
+
+  const currentHeroImages = settings?.hero_images_urls?.length ? settings.hero_images_urls : HERO_IMAGES;
+  const currentPortfolioImages = settings?.portfolio_images_urls?.length ? settings.portfolio_images_urls : PORTFOLIO_IMAGES;
+
+  useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % HERO_IMAGES.length);
+      setCurrentSlide((prev) => (prev + 1) % currentHeroImages.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [currentHeroImages.length]);
 
   const handleAccess = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,8 +64,8 @@ export default function LandingPage() {
     }
   };
 
-  const nextSlide = () => setCurrentSlide((p) => (p + 1) % HERO_IMAGES.length);
-  const prevSlide = () => setCurrentSlide((p) => (p - 1 + HERO_IMAGES.length) % HERO_IMAGES.length);
+  const nextSlide = () => setCurrentSlide((p) => (p + 1) % currentHeroImages.length);
+  const prevSlide = () => setCurrentSlide((p) => (p - 1 + currentHeroImages.length) % currentHeroImages.length);
 
   return (
     <div className="min-h-screen bg-[#0a0c1a] text-white selection:bg-[#282e70] selection:text-white font-sans overflow-x-hidden scroll-smooth">
@@ -92,9 +103,9 @@ export default function LandingPage() {
 
       {/* HERO SECTION */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
-        {HERO_IMAGES.map((img, idx) => (
+        {currentHeroImages.map((img: string, idx: number) => (
           <div 
-            key={img}
+            key={idx}
             className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${idx === currentSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}
           >
             <div className="absolute inset-0 bg-gradient-to-b from-[#171c54]/60 via-[#171c54]/40 to-[#0a0c1a] z-10" />
@@ -111,13 +122,13 @@ export default function LandingPage() {
 
         <div className="relative z-20 text-center px-4 max-w-4xl mx-auto mt-20">
           <h2 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 drop-shadow-2xl">
-            Capturando momentos, <br/>
+            {settings?.hero_title || 'Capturando momentos,'} <br/>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#aab2fc] to-white">
-              contando tu historia.
+              {settings?.hero_subtitle || 'contando tu historia.'}
             </span>
           </h2>
           <p className="text-lg md:text-xl text-gray-200 mb-10 max-w-2xl mx-auto drop-shadow-lg font-light">
-            Especializado en fotografía premium de bodas, eventos y retratos. Cada disparo es una pieza de arte diseñada para perdurar.
+            {settings?.hero_description || 'Especializado en fotografía premium de bodas, eventos y retratos. Cada disparo es una pieza de arte diseñada para perdurar.'}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a href="#portfolio" className="px-8 py-4 bg-white text-[#171c54] font-bold rounded-full hover:bg-gray-100 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)]">
@@ -130,7 +141,7 @@ export default function LandingPage() {
         </div>
 
         <div className="absolute bottom-10 z-20 flex space-x-3 left-1/2 -translate-x-1/2">
-          {HERO_IMAGES.map((_, idx) => (
+          {currentHeroImages.map((_: any, idx: number) => (
             <button 
               key={idx} 
               onClick={() => setCurrentSlide(idx)}
@@ -147,7 +158,7 @@ export default function LandingPage() {
             <div className="md:w-1/2 relative">
               <div className="absolute -inset-4 bg-gradient-to-tr from-[#171c54] to-[#282e70] rounded-3xl opacity-50 blur-2xl"></div>
               <img 
-                src="/photographer_profile_1786601309429.png" 
+                src={settings?.about_image_url || "/photographer_profile_1786601309429.png"}
                 alt="El Fotógrafo" 
                 className="relative rounded-3xl shadow-2xl object-cover w-full h-[500px] border border-white/10"
               />
@@ -157,12 +168,12 @@ export default function LandingPage() {
                 <Camera size={16} />
                 <span>Detrás de la Lente</span>
               </div>
-              <h3 className="text-4xl font-bold mb-6">Hola, soy el rostro detrás de Quevedo Contigo.</h3>
+              <h3 className="text-4xl font-bold mb-6">{settings?.about_title || 'Hola, soy el rostro detrás de Quevedo Contigo.'}</h3>
               <p className="text-gray-400 text-lg mb-6 leading-relaxed">
-                Mi pasión es congelar el tiempo. Me dedico a documentar emociones genuinas, buscando siempre la luz perfecta y la composición ideal para que tus recuerdos parezcan salidos de una película.
+                {settings?.about_description_1 || 'Mi pasión es congelar el tiempo. Me dedico a documentar emociones genuinas, buscando siempre la luz perfecta y la composición ideal para que tus recuerdos parezcan salidos de una película.'}
               </p>
               <p className="text-gray-400 text-lg mb-8 leading-relaxed">
-                Desde bodas íntimas hasta conciertos vibrantes, mi objetivo es que cuando mires tus fotos en 10 años, vuelvas a sentir exactamente lo mismo que sentías en ese instante.
+                {settings?.about_description_2 || 'Desde bodas íntimas hasta conciertos vibrantes, mi objetivo es que cuando mires tus fotos en 10 años, vuelvas a sentir exactamente lo mismo que sentías en ese instante.'}
               </p>
             </div>
           </div>
@@ -180,7 +191,7 @@ export default function LandingPage() {
           </div>
           
           <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
-            {PORTFOLIO_IMAGES.map((img, idx) => (
+            {currentPortfolioImages.map((img: string, idx: number) => (
               <div key={idx} className="relative group overflow-hidden rounded-2xl break-inside-avoid shadow-lg border border-white/10">
                 <img src={img} alt={`Portafolio ${idx + 1}`} className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#171c54]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
@@ -281,35 +292,35 @@ export default function LandingPage() {
             </p>
             
             <div className="flex flex-col sm:flex-row justify-center items-center gap-6 mb-12">
-              <a href="https://wa.me/521234567890" target="_blank" rel="noreferrer" className="flex items-center gap-3 px-8 py-4 bg-[#25D366] text-black font-bold rounded-xl hover:bg-[#20b858] hover:scale-105 transition-all shadow-[0_0_20px_rgba(37,211,102,0.3)]">
+              <a href={`https://wa.me/${settings?.whatsapp_number || '521234567890'}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-8 py-4 bg-[#25D366] text-black font-bold rounded-xl hover:bg-[#20b858] hover:scale-105 transition-all shadow-[0_0_20px_rgba(37,211,102,0.3)]">
                 <MessageCircle size={24} />
                 Enviar WhatsApp
               </a>
-              <a href="mailto:contacto@quevedocontigo.com" className="flex items-center gap-3 px-8 py-4 bg-transparent border-2 border-[#8892f0] text-white font-bold rounded-xl hover:bg-[#8892f0]/10 transition-all">
+              <a href={`mailto:${settings?.email || 'contacto@quevedocontigo.com'}`} className="flex items-center gap-3 px-8 py-4 bg-transparent border-2 border-[#8892f0] text-white font-bold rounded-xl hover:bg-[#8892f0]/10 transition-all">
                 <Mail size={24} />
                 Enviar Correo
               </a>
             </div>
 
             <div className="flex justify-center gap-6">
-              <a href="#" className="flex flex-col items-center gap-2 group">
+              <a href={settings?.instagram_url || '#'} target="_blank" rel="noreferrer" className="flex flex-col items-center gap-2 group">
                 <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] flex items-center justify-center text-white transform group-hover:scale-110 transition-all shadow-lg">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
                 </div>
                 <span className="text-gray-400 text-sm group-hover:text-white transition-colors">Instagram</span>
               </a>
-              <a href="#" className="flex flex-col items-center gap-2 group">
+              <a href={settings?.facebook_url || '#'} target="_blank" rel="noreferrer" className="flex flex-col items-center gap-2 group">
                 <div className="w-14 h-14 rounded-full bg-[#1877f2] flex items-center justify-center text-white transform group-hover:scale-110 transition-all shadow-lg">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
                 </div>
                 <span className="text-gray-400 text-sm group-hover:text-white transition-colors">Facebook</span>
               </a>
-              <a href="#" className="flex flex-col items-center gap-2 group">
-                <div className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center text-white transform group-hover:scale-110 transition-all shadow-lg border border-gray-700">
+              <div className="flex flex-col items-center gap-2 group">
+                <div className="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center text-white shadow-lg border border-gray-700">
                   <MapPin size={24} />
                 </div>
-                <span className="text-gray-400 text-sm group-hover:text-white transition-colors">Ubicación</span>
-              </a>
+                <span className="text-gray-400 text-sm transition-colors">{settings?.location_text || 'México'}</span>
+              </div>
             </div>
           </div>
         </div>

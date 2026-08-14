@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import LandingEditor from './LandingEditor';
 
 interface Gallery {
   id: number;
@@ -40,6 +41,8 @@ export default function AdminDashboard() {
   const [uploadFolder, setUploadFolder] = useState('General');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [activeTab, setActiveTab] = useState<'galleries' | 'landing'>('galleries');
 
   const PHOTOGRAPHER_ID = 1; // Fotógrafo simulado
 
@@ -192,12 +195,27 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gray-950 text-white p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-8">
-        <header className="flex items-center justify-between border-b border-gray-800 pb-6">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-800 pb-6 gap-4">
           <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
             Panel de Fotógrafo
           </h1>
+          <div className="flex bg-gray-900 rounded-lg p-1 border border-gray-800">
+            <button 
+              onClick={() => setActiveTab('galleries')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'galleries' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}
+            >
+              Galerías de Clientes
+            </button>
+            <button 
+              onClick={() => setActiveTab('landing')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'landing' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}
+            >
+              Diseño de Landing Page
+            </button>
+          </div>
         </header>
         
+        {activeTab === 'galleries' ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Formulario / Subida (Izquierda) */}
@@ -403,6 +421,9 @@ export default function AdminDashboard() {
             )}
           </div>
         </div>
+        ) : (
+          <LandingEditor />
+        )}
       </div>
     </div>
   );

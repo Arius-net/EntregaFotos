@@ -87,3 +87,31 @@ model UnlockedPhoto {
 
   @@unique([client_id, photo_id])
 }
+
+model LandingSettings {
+  id                  Int      @id @default(autoincrement())
+  
+  // Hero (Carrusel)
+  hero_images         String[]
+  hero_title          String   @default("Capturando momentos,")
+  hero_subtitle       String   @default("contando tu historia.")
+  hero_description    String   @default("Especializado en fotografía premium de bodas, eventos y retratos.")
+  
+  // Sobre Mí
+  about_image         String   @default("")
+  about_title         String   @default("Hola, soy el rostro detrás de Quevedo Contigo.")
+  about_description_1 String   @default("Mi pasión es congelar el tiempo.")
+  about_description_2 String   @default("Desde bodas íntimas hasta conciertos vibrantes.")
+  
+  // Portafolio (Manual)
+  portfolio_images    String[]
+  
+  // Contacto & Redes
+  whatsapp_number     String   @default("521234567890")
+  email               String   @default("contacto@quevedocontigo.com")
+  instagram_url       String   @default("#")
+  facebook_url        String   @default("#")
+  location_text       String   @default("México")
+
+  updated_at          DateTime @updatedAt
+}

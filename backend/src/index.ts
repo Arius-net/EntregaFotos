@@ -9,6 +9,7 @@ import { uploadPhotos } from './controllers/photoController';
 import { downloadFreePhotos } from './controllers/downloadController';
 import { createPreference, verifyPayment, mpWebhook } from './controllers/paymentController';
 import { login, register, requestClientPin, verifyClientPin } from './controllers/authController';
+import { getSettings, updateSettings, uploadLandingPhoto } from './controllers/settingsController';
 import { authenticateJWT } from './middlewares/authMiddleware';
 
 // Inicializar tarea cron
@@ -51,6 +52,11 @@ app.post('/api/galleries/:access_code/access', authenticateJWT, verifyAccess);
 
 // Rutas de Fotos (Requiere multipart/form-data)
 app.post('/api/photos/upload', authenticateJWT, upload.array('photos', 50), uploadPhotos);
+
+// Rutas del CMS de la Landing Page
+app.get('/api/settings/landing', getSettings);
+app.put('/api/settings/landing', authenticateJWT, updateSettings);
+app.post('/api/settings/upload-landing-image', authenticateJWT, upload.single('photo'), uploadLandingPhoto);
 
 // Rutas de Descarga
 app.post('/api/downloads/free', authenticateJWT, downloadFreePhotos);
