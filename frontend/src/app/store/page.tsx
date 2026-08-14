@@ -28,6 +28,8 @@ export default function StorePage() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<StoreItem | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
+  const [myOrders, setMyOrders] = useState<any[]>([]);
   const [whatsappNumber, setWhatsappNumber] = useState('521234567890');
 
   // Auth State
@@ -141,18 +143,63 @@ export default function StorePage() {
   };
 
   // CHECKOUT
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cart.length === 0) return toast.error('El carrito está vacío');
     if (!user) {
       setIsAuthModalOpen(true);
       return;
     }
 
-    // Build WhatsApp Message
-    const orderList = cart.map(i => `- ${i.title} (Cant: ${i.quantity}) - $${(parseFloat(i.price) * i.quantity).toFixed(2)}`).join('%0A');
-    const message = `Hola! Soy ${user.email}. Deseo realizar el siguiente pedido de la tienda:%0A%0A${orderList}%0A%0A*Total a pagar: $${cartTotal.toFixed(2)}*%0A%0A¿Cómo procedemos con el pago?`;
-    
-    window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
+    const toastId = toast.loading('Procesando pedido...');
+    try {
+      const token = localStorage.getItem('token');
+      const orderRes = await fetch(`${API_URL}/api/store/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          items: cart.map(i => ({ id: i.id, quantity: i.quantity, price: i.price })),
+          total_amount: cartTotal,
+          payment_method: 'WHATSAPP' // Por ahora
+        })
+      });
+
+      if (!orderRes.ok) throw new Error('Error al crear orden');
+      const orderData = await orderRes.json();
+
+      toast.success('Pedido registrado correctamente', { id: toastId });
+      
+      // Limpiar carrito
+      setCart([]);
+      localStorage.removeItem('photo_cart');
+      setIsCartOpen(false);
+
+      // Build WhatsApp Message con número de orden
+      const orderList = cart.map(i => `- ${i.title} (Cant: ${i.quantity}) - $${(parseFloat(i.price) * i.quantity).toFixed(2)}`).join('%0A');
+      const message = `Hola! Soy ${user.email}. Acabo de realizar el pedido #${orderData.order.id} en tu tienda:%0A%0A${orderList}%0A%0A*Total a pagar: $${cartTotal.toFixed(2)}*%0A%0A¿Cómo procedemos con el pago?`;
+      
+      window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
+    } catch (error) {
+      toast.error('Error al procesar el pedido', { id: toastId });
+    }
+  };
+
+  const loadMyOrders = async () => {
+    setIsOrdersModalOpen(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/store/orders/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMyOrders(data.orders);
+      }
+    } catch (e) {
+      toast.error('Error al cargar pedidos');
+    }
   };
 
   return (
@@ -171,7 +218,10 @@ export default function StorePage() {
 
         <div className="flex items-center gap-4">
           {user ? (
-            <span className="text-sm text-gray-400 hidden sm:block">Hola, {user.email}</span>
+            <div className="hidden sm:flex items-center gap-4">
+              <span className="text-sm text-gray-400">Hola, {user.email}</span>
+              <button onClick={loadMyOrders} className="text-sm font-medium text-[#8892f0] hover:text-white transition-colors">Mis Pedidos</button>
+            </div>
           ) : (
             <button onClick={() => setIsAuthModalOpen(true)} className="text-sm font-medium hover:text-[#8892f0] transition-colors">
               Iniciar Sesión
@@ -390,6 +440,53 @@ export default function StorePage() {
               <button onClick={() => setIsLogin(!isLogin)} className="text-[#8892f0] hover:underline text-sm">
                 {isLogin ? '¿No tienes cuenta? Regístrate aquí' : '¿Ya tienes cuenta? Inicia sesión'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MIS PEDIDOS MODAL */}
+      {isOrdersModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setIsOrdersModalOpen(false)}>
+          <div className="bg-[#111322] w-full max-w-2xl max-h-[80vh] flex flex-col p-6 sm:p-8 rounded-3xl border border-white/10 relative" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setIsOrdersModalOpen(false)} className="absolute top-4 right-4 text-gray-500 hover:text-white">
+              <X size={24} />
+            </button>
+            
+            <h2 className="text-2xl font-bold mb-6">Mis Pedidos</h2>
+            
+            <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+              {myOrders.length === 0 ? (
+                <p className="text-gray-400 text-center py-10">Aún no has realizado pedidos.</p>
+              ) : (
+                myOrders.map(order => (
+                  <div key={order.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+                    <div className="flex justify-between items-center mb-4 border-b border-gray-800 pb-3">
+                      <div>
+                        <span className="text-sm text-gray-400">Orden #{order.id}</span>
+                        <p className="text-sm">{new Date(order.created_at).toLocaleDateString()}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${order.status === 'PAID' ? 'bg-green-900/50 text-green-400' : 'bg-amber-900/50 text-amber-400'}`}>
+                          {order.status === 'PAID' ? 'PAGADO' : 'PENDIENTE'}
+                        </span>
+                        <p className="font-bold mt-1 text-lg">${order.total_amount}</p>
+                      </div>
+                    </div>
+                    <ul className="space-y-2">
+                      {order.items.map((item: any) => (
+                        <li key={item.id} className="flex gap-3 items-center">
+                          <img src={item.store_item.thumbnail_url} className="w-12 h-12 rounded object-cover bg-black" />
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold">{item.store_item.title}</p>
+                            <p className="text-xs text-gray-400">Cant: {item.quantity} x ${item.price_at_time}</p>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

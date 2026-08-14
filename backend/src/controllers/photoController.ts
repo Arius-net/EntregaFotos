@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import prisma from '../prismaClient';
 import sharp from 'sharp';
+import path from 'path';
+import fs from 'fs';
 import { uploadFile } from '../services/storage';
 
 export const uploadPhotos = async (req: Request, res: Response) => {
@@ -21,9 +23,23 @@ export const uploadPhotos = async (req: Request, res: Response) => {
       const highResKey = `galleries/${gallery_id}/highres/${uniqueId}-${file.originalname}`;
       const thumbnailKey = `galleries/${gallery_id}/thumbnails/thumb-${uniqueId}.webp`;
 
-      // 1. Procesar miniatura con Sharp (800px WebP)
-      const thumbnailBuffer = await sharp(file.buffer)
-        .resize({ width: 800, withoutEnlargement: true })
+      // 1. Procesar miniatura con Sharp y Marca de Agua
+      const imageMetadata = await sharp(file.buffer).metadata();
+      const targetWidth = 800;
+      
+      let sharpPipeline = sharp(file.buffer)
+        .resize({ width: targetWidth, withoutEnlargement: true });
+
+      // Ruta de la marca de agua
+      const watermarkPath = path.join(process.cwd(), '../frontend/public/logo_symbol.png');
+      if (fs.existsSync(watermarkPath)) {
+        sharpPipeline = sharpPipeline.composite([{
+          input: await sharp(watermarkPath).resize({ width: Math.round(targetWidth * 0.4) }).toBuffer(),
+          gravity: 'center'
+        }]);
+      }
+
+      const thumbnailBuffer = await sharpPipeline
         .webp({ quality: 80 })
         .toBuffer();
 

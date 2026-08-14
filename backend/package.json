@@ -26,7 +26,7 @@
     "multer": "^2.2.0",
     "node-cron": "^4.6.0",
     "prisma": "^5.22.0",
-    "resend": "^6.19.0",
+    "resend": "^6.20.0",
     "sharp": "^0.35.3",
     "typescript": "^7.0.2"
   },

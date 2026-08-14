@@ -10,7 +10,7 @@ import { downloadFreePhotos } from './controllers/downloadController';
 import { createPreference, verifyPayment, mpWebhook } from './controllers/paymentController';
 import { login, register, requestClientPin, verifyClientPin } from './controllers/authController';
 import { getSettings, updateSettings, uploadLandingPhoto } from './controllers/settingsController';
-import { createStoreItem, getStoreItems, updateStoreItem, deleteStoreItem } from './controllers/storeController';
+import { createStoreItem, getStoreItems, updateStoreItem, deleteStoreItem, createStoreOrder, getMyStoreOrders, getAllStoreOrders } from './controllers/storeController';
 import { authenticateJWT } from './middlewares/authMiddleware';
 
 // Inicializar tarea cron
@@ -68,6 +68,11 @@ app.get('/api/store', getStoreItems);
 app.post('/api/store', authenticateJWT, upload.single('photo'), createStoreItem);
 app.put('/api/store/:id', authenticateJWT, updateStoreItem);
 app.delete('/api/store/:id', authenticateJWT, deleteStoreItem);
+
+// Rutas de Órdenes de Tienda
+app.post('/api/store/orders', authenticateJWT, createStoreOrder);
+app.get('/api/store/orders/me', authenticateJWT, getMyStoreOrders);
+app.get('/api/admin/store/orders', authenticateJWT, getAllStoreOrders);
 
 // Rutas de Descarga
 app.post('/api/downloads/free', authenticateJWT, downloadFreePhotos);

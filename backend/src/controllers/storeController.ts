@@ -118,3 +118,91 @@ export const deleteStoreItem = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Error deleting store item' });
   }
 };
+
+export const createStoreOrder = async (req: Request, res: Response) => {
+  try {
+    const client_id = (req as any).user?.id;
+    if (!client_id) return res.status(401).json({ error: 'No autorizado' });
+
+    const { items, total_amount, payment_method } = req.body;
+    // items is an array of { id, quantity, price }
+
+    const order = await prisma.storeOrder.create({
+      data: {
+        client_id,
+        total_amount,
+        payment_method,
+        status: 'PENDING',
+        items: {
+          create: items.map((item: any) => ({
+            store_item_id: item.id,
+            quantity: item.quantity,
+            price_at_time: item.price
+          }))
+        }
+      }
+    });
+
+    res.status(201).json({ order });
+  } catch (error) {
+    console.error('Error creating store order:', error);
+    res.status(500).json({ error: 'Error interno' });
+  }
+};
+
+export const getMyStoreOrders = async (req: Request, res: Response) => {
+  try {
+    const client_id = (req as any).user?.id;
+    if (!client_id) return res.status(401).json({ error: 'No autorizado' });
+
+    const orders = await prisma.storeOrder.findMany({
+      where: { client_id },
+      orderBy: { created_at: 'desc' },
+      include: {
+        items: {
+          include: {
+            store_item: { select: { title: true, thumbnail_url: true } }
+          }
+        }
+      }
+    });
+
+    // Firmar URLs de las órdenes para el frontend
+    const signedOrders = await Promise.all(orders.map(async (order: any) => {
+      const signedItems = await Promise.all(order.items.map(async (item: any) => {
+        let key = item.store_item.thumbnail_url;
+        if (key && !key.startsWith('http')) {
+          key = await generateSecureDownloadUrl(key);
+        }
+        return { ...item, store_item: { ...item.store_item, thumbnail_url: key } };
+      }));
+      return { ...order, items: signedItems };
+    }));
+
+    res.status(200).json({ orders: signedOrders });
+  } catch (error) {
+    console.error('Error fetching my store orders:', error);
+    res.status(500).json({ error: 'Error interno' });
+  }
+};
+
+export const getAllStoreOrders = async (req: Request, res: Response) => {
+  try {
+    const orders = await prisma.storeOrder.findMany({
+      orderBy: { created_at: 'desc' },
+      include: {
+        client: { select: { name: true, email: true } },
+        items: {
+          include: {
+            store_item: { select: { title: true } }
+          }
+        }
+      }
+    });
+
+    res.status(200).json({ orders });
+  } catch (error) {
+    console.error('Error fetching all store orders:', error);
+    res.status(500).json({ error: 'Error interno' });
+  }
+};

@@ -25,6 +25,7 @@ model Client {
   unlocked_photos UnlockedPhoto[]
   gallery_accesses GalleryAccess[]
   selected_photos SelectedPhoto[]
+  store_orders    StoreOrder[]
 }
 
 model Gallery {
@@ -152,4 +153,28 @@ model StoreItem {
   is_active       Boolean  @default(true)
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
+  order_items     StoreOrderItem[]
+}
+
+model StoreOrder {
+  id              Int      @id @default(autoincrement())
+  client_id       Int
+  client          Client   @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  status          String   @default("PENDING") // PENDING, PAID, CANCELLED
+  total_amount    Decimal
+  payment_method  String?  // OPENPAY, STRIPE, WHATSAPP
+  payment_id      String?  
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  items           StoreOrderItem[]
+}
+
+model StoreOrderItem {
+  id              Int      @id @default(autoincrement())
+  order_id        Int
+  order           StoreOrder @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  store_item_id   Int
+  store_item      StoreItem  @relation(fields: [store_item_id], references: [id])
+  price_at_time   Decimal
+  quantity        Int
 }

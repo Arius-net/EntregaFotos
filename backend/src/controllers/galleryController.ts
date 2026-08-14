@@ -332,10 +332,23 @@ export const submitSelection = async (req: Request, res: Response) => {
 
     if (!client_id) return res.status(401).json({ error: 'No autorizado' });
 
+    const gallery = await prisma.gallery.findUnique({
+      where: { id: gallery_id },
+      include: { photographer: true }
+    });
+
+    const client = await prisma.client.findUnique({ where: { id: client_id } });
+    const selectedCount = await prisma.selectedPhoto.count({ where: { gallery_id, client_id } });
+
     await prisma.gallery.update({
       where: { id: gallery_id },
       data: { status: 'SUBMITTED' }
     });
+
+    if (gallery && client && gallery.photographer) {
+      const { sendSelectionNotification } = await import('../services/emailService');
+      await sendSelectionNotification(client.email, gallery.name, gallery.photographer.email, selectedCount);
+    }
 
     res.status(200).json({ message: 'Selección enviada con éxito' });
   } catch (error) {

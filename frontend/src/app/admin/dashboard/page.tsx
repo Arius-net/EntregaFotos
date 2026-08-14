@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import LandingEditor from './LandingEditor';
 import StoreEditor from './StoreEditor';
+import StoreOrders from './StoreOrders';
 
 interface Gallery {
   id: number;
@@ -53,7 +54,7 @@ export default function AdminDashboard() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [activeTab, setActiveTab] = useState<'galleries' | 'landing' | 'store'>('galleries');
+  const [activeTab, setActiveTab] = useState<'galleries' | 'landing' | 'store' | 'orders'>('galleries');
 
   const PHOTOGRAPHER_ID = 1; // Fotógrafo simulado
 
@@ -251,6 +252,12 @@ export default function AdminDashboard() {
               className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'store' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}
             >
               Tienda Oficial
+            </button>
+            <button 
+              onClick={() => setActiveTab('orders')}
+              className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'orders' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}
+            >
+              Ventas (Órdenes)
             </button>
           </div>
         </header>
@@ -512,8 +519,10 @@ export default function AdminDashboard() {
         </div>
         ) : activeTab === 'landing' ? (
           <LandingEditor />
-        ) : (
+        ) : activeTab === 'store' ? (
           <StoreEditor />
+        ) : (
+          <StoreOrders />
         )}
       </div>
 

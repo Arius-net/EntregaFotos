@@ -161,12 +161,7 @@ export default function SelectionGrid({
                   draggable={false} // Bloquear arrastre
                 />
                 
-                {/* MARCA DE AGUA CSS PROTECTORA */}
-                <div className="absolute inset-0 pointer-events-none opacity-20 flex flex-wrap items-center justify-center overflow-hidden" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 40px, rgba(255,255,255,0.1) 40px, rgba(255,255,255,0.1) 80px)' }}>
-                  <div className="transform -rotate-45 text-white text-2xl font-black uppercase tracking-widest text-center mix-blend-overlay break-words w-[200%]">
-                    PRUEBA SIN EDITAR - PRUEBA SIN EDITAR - PRUEBA SIN EDITAR
-                  </div>
-                </div>
+                <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors pointer-events-none" />
 
                 {/* BOTÓN DE SELECCIÓN */}
                 {status !== 'SUBMITTED' && (
