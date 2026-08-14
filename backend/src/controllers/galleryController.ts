@@ -357,7 +357,7 @@ export const getAdminSelection = async (req: Request, res: Response) => {
     const selections = await prisma.selectedPhoto.findMany({
       where: { gallery_id },
       include: {
-        photo: { select: { thumbnail_url: true, folder: true } },
+        photo: { select: { thumbnail_url: true, folder: true, high_res_key: true } },
         client: { select: { email: true } }
       }
     });

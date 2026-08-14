@@ -534,10 +534,15 @@ export default function AdminDashboard() {
               ) : (
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
                   {clientSelections.map(s => (
-                    <div key={s.id} className="relative aspect-square bg-black rounded-lg overflow-hidden border border-gray-800">
+                    <div key={s.id} className="relative aspect-square bg-black rounded-lg overflow-hidden border border-gray-800 group">
                       <img src={s.photo.thumbnail_url} className="w-full h-full object-cover opacity-80" />
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <span className="text-white text-3xl opacity-50 drop-shadow-lg">✅</span>
+                      </div>
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm p-1.5 text-center">
+                        <span className="text-[10px] text-gray-300 font-mono truncate block px-1" title={s.photo.high_res_key ? s.photo.high_res_key.split('/').pop() : `IMG_${s.id}`}>
+                          {s.photo.high_res_key ? s.photo.high_res_key.split('/').pop() : `IMG_${s.id}`}
+                        </span>
                       </div>
                     </div>
                   ))}
