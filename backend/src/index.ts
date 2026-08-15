@@ -56,7 +56,7 @@ app.get('/api/photographers/:id/galleries', authenticateJWT, getGalleriesByPhoto
 app.post('/api/galleries/:access_code/access', authenticateJWT, verifyAccess);
 
 // Rutas de Fotos (Requiere multipart/form-data)
-app.post('/api/photos/upload', authenticateJWT, upload.array('photos', 50), uploadPhotos);
+app.post('/api/photos/upload', authenticateJWT, upload.array('photos', 500), uploadPhotos);
 
 // Rutas del CMS de la Landing Page
 app.get('/api/settings/landing', getSettings);

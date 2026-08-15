@@ -197,30 +197,37 @@ export default function AdminDashboard() {
     setUploading(true);
     const toastId = toast.loading(`Subiendo ${files.length} fotos a Cloudflare R2...`);
 
-    const formData = new FormData();
-    formData.append('gallery_id', activeGalleryForUpload.id.toString());
-    formData.append('folder', uploadFolder);
-    files.forEach(file => {
-      formData.append('photos', file);
-    });
-
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${API_URL}/api/photos/upload`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData,
-      });
+      const batchSize = 20; // Subir de 20 en 20 para evitar problemas de memoria en el servidor
+      
+      for (let i = 0; i < files.length; i += batchSize) {
+        const batch = files.slice(i, i + batchSize);
+        const formData = new FormData();
+        formData.append('gallery_id', activeGalleryForUpload.id.toString());
+        formData.append('folder', uploadFolder);
+        batch.forEach(file => {
+          formData.append('photos', file);
+        });
 
-      if (res.ok) {
-        toast.success(`${files.length} fotos subidas exitosamente`, { id: toastId });
-        fetchGalleries(); // Refrescar conteo
-        setActiveGalleryForUpload(null); // Cerrar modo subida
-      } else {
-        toast.error('Error al subir fotos', { id: toastId });
+        toast.loading(`Subiendo lote ${Math.floor(i / batchSize) + 1} de ${Math.ceil(files.length / batchSize)}...`, { id: toastId });
+
+        const res = await fetch(`${API_URL}/api/photos/upload`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData,
+        });
+
+        if (!res.ok) {
+          throw new Error(`Error en el lote ${Math.floor(i / batchSize) + 1}`);
+        }
       }
+
+      toast.success(`${files.length} fotos subidas exitosamente`, { id: toastId });
+      fetchGalleries(); // Refrescar conteo
+      setActiveGalleryForUpload(null); // Cerrar modo subida
     } catch (error) {
-      toast.error('Error de red al subir', { id: toastId });
+      toast.error('Error de red al subir fotos o el lote falló', { id: toastId });
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
