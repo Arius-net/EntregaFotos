@@ -338,7 +338,15 @@ export const submitSelection = async (req: Request, res: Response) => {
     });
 
     const client = await prisma.client.findUnique({ where: { id: client_id } });
-    const selectedCount = await prisma.selectedPhoto.count({ where: { gallery_id, client_id } });
+    const selectedPhotos = await prisma.selectedPhoto.findMany({
+      where: { gallery_id, client_id },
+      include: { photo: true }
+    });
+
+    const photoNames = selectedPhotos.map(sp => {
+      const fullName = sp.photo.high_res_key ? sp.photo.high_res_key.split('/').pop() || `IMG_${sp.photo.id}` : `IMG_${sp.photo.id}`;
+      return fullName.replace(/^\d+-/, ''); // Limpiar el nombre
+    });
 
     await prisma.gallery.update({
       where: { id: gallery_id },
@@ -347,7 +355,7 @@ export const submitSelection = async (req: Request, res: Response) => {
 
     if (gallery && client && gallery.photographer) {
       const { sendSelectionNotification } = await import('../services/emailService');
-      await sendSelectionNotification(client.email, gallery.name, gallery.photographer.email, selectedCount);
+      await sendSelectionNotification(client.email, gallery.name, gallery.photographer.email, photoNames);
     }
 
     res.status(200).json({ message: 'Selección enviada con éxito' });
