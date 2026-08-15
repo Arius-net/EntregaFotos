@@ -549,19 +549,25 @@ export default function AdminDashboard() {
                 <div className="text-center py-10 text-gray-500">El cliente envió su selección vacía o hubo un error.</div>
               ) : (
                 <div className="columns-2 sm:columns-3 md:columns-4 gap-4 space-y-4">
-                  {clientSelections.map(s => (
-                    <div key={s.id} className="relative break-inside-avoid bg-black rounded-lg overflow-hidden border border-gray-800 group">
-                      <img src={s.photo.thumbnail_url} className="w-full h-auto object-cover opacity-80" />
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <span className="text-white text-3xl opacity-50 drop-shadow-lg">✅</span>
+                  {clientSelections.map(s => {
+                    // Extraer solo el nombre original (Remover el ID autogenerado "1234567890-")
+                    const fullName = s.photo.high_res_key ? s.photo.high_res_key.split('/').pop() : `IMG_${s.id}`;
+                    const displayName = fullName.replace(/^\d+-/, '');
+
+                    return (
+                      <div key={s.id} className="relative break-inside-avoid bg-black rounded-lg overflow-hidden border border-gray-800 group">
+                        <img src={s.photo.thumbnail_url} className="w-full h-auto object-cover opacity-80" />
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <span className="text-white text-3xl opacity-50 drop-shadow-lg">✅</span>
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm p-1.5 text-center">
+                          <span className="text-[10px] text-gray-300 font-mono truncate block px-1" title={displayName}>
+                            {displayName}
+                          </span>
+                        </div>
                       </div>
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm p-1.5 text-center">
-                        <span className="text-[10px] text-gray-300 font-mono truncate block px-1" title={s.photo.high_res_key ? s.photo.high_res_key.split('/').pop() : `IMG_${s.id}`}>
-                          {s.photo.high_res_key ? s.photo.high_res_key.split('/').pop() : `IMG_${s.id}`}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
