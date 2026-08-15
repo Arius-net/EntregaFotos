@@ -45,6 +45,8 @@ export const getGallery = async (req: Request, res: Response) => {
             id: true,
             thumbnail_url: true,
             folder: true,
+            high_res_key: true,
+            is_final: true
           }
         }
       }
@@ -69,6 +71,13 @@ export const getGallery = async (req: Request, res: Response) => {
         };
       })
     );
+
+    // Ordenar de forma natural según el nombre de archivo original
+    photosWithSignedUrls.sort((a, b) => {
+      const nameA = (a.high_res_key?.split('/').pop() || '').replace(/^\d+-/, '');
+      const nameB = (b.high_res_key?.split('/').pop() || '').replace(/^\d+-/, '');
+      return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+    });
 
     res.status(200).json({
       gallery: {
@@ -399,6 +408,13 @@ export const getAdminSelection = async (req: Request, res: Response) => {
         };
       })
     );
+
+    // Ordenar alfabéticamente/numéricamente según el nombre de archivo original
+    selectionsWithSignedUrls.sort((a, b) => {
+      const nameA = (a.photo.high_res_key.split('/').pop() || '').replace(/^\d+-/, '');
+      const nameB = (b.photo.high_res_key.split('/').pop() || '').replace(/^\d+-/, '');
+      return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+    });
 
     res.status(200).json({ selections: selectionsWithSignedUrls });
   } catch (error) {

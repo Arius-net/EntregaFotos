@@ -145,6 +145,13 @@ export const downloadGalleryZip = async (req: Request, res: Response) => {
     // Enviar el stream del ZIP directamente a la respuesta
     archive.pipe(res);
 
+    // Ordenar naturalmente antes de empaquetar
+    gallery.photos.sort((a, b) => {
+      const nameA = (a.high_res_key.split('/').pop() || '').replace(/^\d+-/, '');
+      const nameB = (b.high_res_key.split('/').pop() || '').replace(/^\d+-/, '');
+      return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+    });
+
     // Iterar sobre las fotos y añadirlas al ZIP
     for (const photo of gallery.photos) {
       try {
