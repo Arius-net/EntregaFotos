@@ -15,9 +15,10 @@ interface PhotoGridProps {
   extraPrice: number;
   galleryId: number;
   clientEmail: string;
+  isDeliveryMode?: boolean;
 }
 
-export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, clientEmail }: PhotoGridProps) {
+export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, clientEmail, isDeliveryMode = false }: PhotoGridProps) {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
 
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -138,6 +139,37 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
     }
   };
 
+  const handleDownloadZip = async () => {
+    setIsProcessing(true);
+    const toastId = toast.loading('Generando tu archivo ZIP... Esto puede tomar unos minutos.');
+    try {
+      const token = localStorage.getItem('client_token');
+      const res = await fetch(`${API_URL}/api/downloads/${galleryId}/zip`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (res.ok) {
+        toast.success('¡ZIP generado! Descargando...', { id: toastId });
+        // Trigger download directly from the backend stream response
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Entrega_Final.zip`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      } else {
+        toast.error('Error al generar el ZIP', { id: toastId });
+      }
+    } catch (e) {
+      toast.error('Error de conexión', { id: toastId });
+    }
+    setIsProcessing(false);
+  };
+
   // Cálculos de precios y límites
   const selectedCount = selectedIds.size;
   const newSelectedCount = Array.from(selectedIds).filter(id => !unlockedIds.has(id)).length;
@@ -220,69 +252,90 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
 
       {/* Floating Action Bar (Bottom) */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-50 transition-all duration-500 transform">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          
-          {/* Info Section */}
-          <div className="flex-1 flex items-center gap-4 text-sm w-full">
-            <div className="bg-white/10 p-3 rounded-xl border border-white/5">
-              <p className="text-gray-400 text-xs">Seleccionadas</p>
-              <p className="text-white font-bold text-lg leading-none">{selectedCount}</p>
-            </div>
-            
-            <div className="flex-1">
-              <p className="text-gray-300 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                Fotos Gratis: <span className="font-bold text-white">{remainingFreePhotos}</span> restantes
-              </p>
-              {isOverLimit && !areAllSelectedAlreadyUnlocked && (
-                <p className="text-gray-400 mt-1 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  Extra: <span className="font-bold text-emerald-400">{extraPhotos} fotos</span> × ${extraPrice}
+        {isDeliveryMode ? (
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex-1 flex items-center gap-4 text-sm w-full">
+              <div className="bg-white/10 p-3 rounded-xl border border-emerald-500/30">
+                <p className="text-emerald-400 font-bold flex items-center gap-2">
+                  <span>🎉</span> ¡Tus fotos están listas!
                 </p>
+                <p className="text-gray-300 text-xs mt-1">Descarga tu paquete completo de fotos editadas en alta resolución.</p>
+              </div>
+            </div>
+            <div className="w-full md:w-auto">
+              <button
+                onClick={handleDownloadZip}
+                disabled={isProcessing}
+                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-8 py-3 rounded-xl font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isProcessing ? 'Generando ZIP...' : '📦 Descargar Galería en ZIP'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* Info Section */}
+            <div className="flex-1 flex items-center gap-4 text-sm w-full">
+              <div className="bg-white/10 p-3 rounded-xl border border-white/5">
+                <p className="text-gray-400 text-xs">Seleccionadas</p>
+                <p className="text-white font-bold text-lg leading-none">{selectedCount}</p>
+              </div>
+              
+              <div className="flex-1">
+                <p className="text-gray-300 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                  Fotos Gratis: <span className="font-bold text-white">{remainingFreePhotos}</span> restantes
+                </p>
+                {isOverLimit && !areAllSelectedAlreadyUnlocked && (
+                  <p className="text-gray-400 mt-1 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    Extra: <span className="font-bold text-emerald-400">{extraPhotos} fotos</span> × ${extraPrice}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Acción Principal */}
+            <div className="w-full md:w-auto">
+              {selectedCount === 0 ? (
+                <div className="bg-white/5 text-gray-500 px-6 py-3 rounded-xl font-medium text-center border border-white/5">
+                  Selecciona fotos para continuar
+                </div>
+              ) : areAllSelectedAlreadyUnlocked ? (
+                <button
+                  onClick={handleDownloadUnlocked}
+                  disabled={isProcessing}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-8 py-3 rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {isProcessing ? 'Descargando...' : '⬇️ Descargar'}
+                </button>
+              ) : !isOverLimit ? (
+                <button
+                  onClick={handleDownloadUnlocked}
+                  disabled={isProcessing}
+                  className="w-full bg-white text-black hover:bg-gray-200 px-8 py-3 rounded-xl font-bold shadow-lg transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {isProcessing ? 'Procesando...' : 'Desbloquear Gratis'}
+                </button>
+              ) : (
+                <button
+                  onClick={handlePay}
+                  disabled={isProcessing}
+                  className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white px-8 py-3 rounded-xl font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                >
+                  {isProcessing ? (
+                    'Conectando...'
+                  ) : (
+                    <>
+                      <span>Pagar</span>
+                      <span className="text-xl">${totalCost}</span>
+                    </>
+                  )}
+                </button>
               )}
             </div>
           </div>
-
-          {/* Acción Principal */}
-          <div className="w-full md:w-auto">
-            {selectedCount === 0 ? (
-              <div className="bg-white/5 text-gray-500 px-6 py-3 rounded-xl font-medium text-center border border-white/5">
-                Selecciona fotos para continuar
-              </div>
-            ) : areAllSelectedAlreadyUnlocked ? (
-              <button
-                onClick={handleDownloadUnlocked}
-                disabled={isProcessing}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-8 py-3 rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all active:scale-95 disabled:opacity-50"
-              >
-                {isProcessing ? 'Descargando...' : '⬇️ Descargar'}
-              </button>
-            ) : !isOverLimit ? (
-              <button
-                onClick={handleDownloadUnlocked}
-                disabled={isProcessing}
-                className="w-full bg-white text-black hover:bg-gray-200 px-8 py-3 rounded-xl font-bold shadow-lg transition-all active:scale-95 disabled:opacity-50"
-              >
-                {isProcessing ? 'Procesando...' : 'Desbloquear Gratis'}
-              </button>
-            ) : (
-              <button
-                onClick={handlePay}
-                disabled={isProcessing}
-                className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white px-8 py-3 rounded-xl font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
-              >
-                {isProcessing ? (
-                  'Conectando...'
-                ) : (
-                  <>
-                    <span>Pagar</span>
-                    <span className="text-xl">${totalCost}</span>
-                  </>
-                )}
-              </button>
-            )}
-          </div>
-        </div>
+        )}
       </div>
     </>
   );

@@ -35,6 +35,15 @@ export const generateSecureDownloadUrl = async (key: string, forceDownload: bool
   return await getSignedUrl(s3Client, command, { expiresIn: 900 });
 };
 
+export const getFileStream = async (key: string) => {
+  const command = new GetObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+  });
+  const response = await s3Client.send(command);
+  return response.Body as NodeJS.ReadableStream;
+};
+
 // Utilidad extra para el cron job y borrado de galerías
 import { DeleteObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 

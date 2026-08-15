@@ -4,10 +4,12 @@ import sharp from 'sharp';
 import path from 'path';
 import fs from 'fs';
 import { uploadFile } from '../services/storage';
+import { sendDeliveryNotification } from '../services/emailService';
 
 export const uploadPhotos = async (req: Request, res: Response) => {
   try {
-    const { gallery_id, folder } = req.body;
+    const { gallery_id, folder, is_final } = req.body;
+    const isFinalUpload = is_final === 'true';
     const files = req.files as Express.Multer.File[];
     const folderName = folder || 'General';
 
@@ -23,7 +25,7 @@ export const uploadPhotos = async (req: Request, res: Response) => {
       const highResKey = `galleries/${gallery_id}/highres/${uniqueId}-${file.originalname}`;
       const thumbnailKey = `galleries/${gallery_id}/thumbnails/thumb-${uniqueId}.webp`;
 
-      // 1. Procesar miniatura con Sharp y Marca de Agua
+      // 1. Procesar miniatura con Sharp (y Marca de Agua si NO es final)
       const imageMetadata = await sharp(file.buffer).metadata();
       const targetWidth = 800;
       
@@ -31,12 +33,14 @@ export const uploadPhotos = async (req: Request, res: Response) => {
         .resize({ width: targetWidth, withoutEnlargement: true });
 
       // Ruta de la marca de agua
-      const watermarkPath = path.join(process.cwd(), '../frontend/public/logo_symbol.png');
-      if (fs.existsSync(watermarkPath)) {
-        sharpPipeline = sharpPipeline.composite([{
-          input: await sharp(watermarkPath).resize({ width: Math.round(targetWidth * 0.4) }).toBuffer(),
-          gravity: 'center'
-        }]);
+      if (!isFinalUpload) {
+        const watermarkPath = path.join(process.cwd(), '../frontend/public/logo_symbol.png');
+        if (fs.existsSync(watermarkPath)) {
+          sharpPipeline = sharpPipeline.composite([{
+            input: await sharp(watermarkPath).resize({ width: Math.round(targetWidth * 0.4) }).toBuffer(),
+            gravity: 'center'
+          }]);
+        }
       }
 
       const thumbnailBuffer = await sharpPipeline
@@ -56,10 +60,31 @@ export const uploadPhotos = async (req: Request, res: Response) => {
           thumbnail_url: thumbnailKey,
           high_res_key: highResKey,
           folder: folderName,
+          is_final: isFinalUpload,
         }
       });
 
       savedPhotos.push(photo);
+    }
+
+    // 5. Si es subida final, actualizar el estado de la galería a DELIVERED
+    if (isFinalUpload) {
+      const gallery = await prisma.gallery.findUnique({ 
+        where: { id: parseInt(gallery_id) },
+        include: { accesses: { include: { client: true } } }
+      });
+      if (gallery && gallery.status !== 'DELIVERED') {
+        await prisma.gallery.update({
+          where: { id: parseInt(gallery_id) },
+          data: { status: 'DELIVERED' }
+        });
+        
+        // Enviar correo automático si hay un cliente asociado
+        if (gallery.accesses && gallery.accesses.length > 0) {
+          const clientEmail = gallery.accesses[0].client.email;
+          await sendDeliveryNotification(clientEmail, gallery.name, gallery.access_code);
+        }
+      }
     }
 
     res.status(201).json({ photos: savedPhotos });

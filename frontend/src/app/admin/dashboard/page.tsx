@@ -48,8 +48,8 @@ export default function AdminDashboard() {
   const [clientSelections, setClientSelections] = useState<any[]>([]);
   const [isLoadingSelections, setIsLoadingSelections] = useState(false);
 
-  // Estado para la subida de fotos
   const [activeGalleryForUpload, setActiveGalleryForUpload] = useState<Gallery | null>(null);
+  const [isFinalUploadMode, setIsFinalUploadMode] = useState(false);
   const [uploadFolder, setUploadFolder] = useState('General');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -206,6 +206,7 @@ export default function AdminDashboard() {
         const formData = new FormData();
         formData.append('gallery_id', activeGalleryForUpload.id.toString());
         formData.append('folder', uploadFolder);
+        formData.append('is_final', isFinalUploadMode.toString());
         batch.forEach(file => {
           formData.append('photos', file);
         });
@@ -278,7 +279,14 @@ export default function AdminDashboard() {
               <div className="bg-gray-900 rounded-2xl shadow-xl p-6 border border-blue-500/50 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500 animate-pulse" />
                 
-                <h2 className="text-xl font-semibold mb-2">Subir a: {activeGalleryForUpload.name}</h2>
+                <h2 className="text-xl font-semibold mb-2">
+                  {isFinalUploadMode && activeGalleryForUpload.type === 'SELECTION' ? '🚀 Subiendo Entrega Final a:' : 'Subir a:'} {activeGalleryForUpload.name}
+                </h2>
+                {isFinalUploadMode && activeGalleryForUpload.type === 'SELECTION' && (
+                  <div className="bg-emerald-900/30 border border-emerald-500/30 rounded-lg p-3 mb-4 text-xs text-emerald-300">
+                    Estás subiendo las fotos editadas finales. No se les aplicará marca de agua y el cliente será notificado para descargarlas.
+                  </div>
+                )}
                 <div className="bg-gray-950 rounded-xl p-4 mb-6 border border-gray-800 text-center">
                   <p className="text-sm text-gray-400 mb-1">Código de acceso</p>
                   <p className="text-2xl font-mono text-blue-400 tracking-wider">{activeGalleryForUpload.access_code}</p>
@@ -352,6 +360,19 @@ export default function AdminDashboard() {
                       <button type="button" onClick={() => setGalleryType('SELECTION')} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${galleryType === 'SELECTION' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'}`}>
                         Para Selección (Proofing)
                       </button>
+                    </div>
+                    <div className="mt-2 p-3 bg-gray-900/50 border border-gray-800 rounded-lg">
+                      {galleryType === 'FINAL' ? (
+                        <p className="text-xs text-blue-300">
+                          <strong className="block text-blue-400 mb-1">¿Cuándo usar Entrega Final?</strong>
+                          Úsala para enviar un trabajo ya terminado. El cliente descarga gratis el límite que pongas, o puede pagar para bajar fotos extra. Ideal para bodas terminadas o ventas de fotos adicionales.
+                        </p>
+                      ) : (
+                        <p className="text-xs text-purple-300">
+                          <strong className="block text-purple-400 mb-1">¿Cuándo usar Selección?</strong>
+                          Sube fotos "borrador" con marca de agua. El cliente escogerá sus favoritas y tú recibirás la lista. Luego, podrás subir las versiones finales editadas para que las descargue gratuitamente.
+                        </p>
+                      )}
                     </div>
                   </div>
                   
@@ -505,18 +526,26 @@ export default function AdminDashboard() {
                       </button>
                     </div>
                     {gallery.type === 'SELECTION' && gallery.status === 'SUBMITTED' && (
-                      <button 
-                        onClick={() => openSelectionModal(gallery)}
-                        className="w-full mt-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 text-center text-sm py-2 rounded-lg transition-colors border border-purple-500/30 font-medium flex items-center justify-center gap-2"
-                      >
-                        ✅ Ver Fotos Seleccionadas
-                      </button>
+                      <>
+                        <button 
+                          onClick={() => openSelectionModal(gallery)}
+                          className="w-full mt-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 text-center text-sm py-2 rounded-lg transition-colors border border-purple-500/30 font-medium flex items-center justify-center gap-2"
+                        >
+                          ✅ Ver Fotos Seleccionadas
+                        </button>
+                        <button 
+                          onClick={() => { setActiveGalleryForUpload(gallery); setIsFinalUploadMode(true); }}
+                          className="w-full mt-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 text-center text-sm py-2 rounded-lg transition-colors border border-emerald-500/30 font-bold flex items-center justify-center gap-2"
+                        >
+                          🚀 Subir Entrega Final
+                        </button>
+                      </>
                     )}
                     <button 
-                      onClick={() => setActiveGalleryForUpload(gallery)}
+                      onClick={() => { setActiveGalleryForUpload(gallery); setIsFinalUploadMode(gallery.type === 'FINAL'); }}
                       className="w-full mt-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 text-center text-sm py-2 rounded-lg transition-colors border border-blue-500/20"
                     >
-                      Subir Fotos
+                      {gallery.type === 'FINAL' ? 'Subir Fotos Finales' : 'Subir Borradores (Para Seleccionar)'}
                     </button>
                   </div>
                 ))}

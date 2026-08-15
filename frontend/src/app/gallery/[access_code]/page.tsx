@@ -219,9 +219,9 @@ export default function GalleryPage({ params }: { params: Promise<{ access_code:
       </header>
 
       <main className="p-4 md:p-8 max-w-[1400px] mx-auto">
-        {gallery.type === 'SELECTION' ? (
+        {gallery.type === 'SELECTION' && gallery.status !== 'DELIVERED' ? (
           <SelectionGrid 
-            photos={gallery.photos}
+            photos={gallery.photos.filter((p: any) => !p.is_final)}
             selectionLimit={gallery.selection_limit}
             galleryId={gallery.id}
             clientEmail={email}
@@ -229,11 +229,12 @@ export default function GalleryPage({ params }: { params: Promise<{ access_code:
           />
         ) : (
           <PhotoGrid 
-            photos={gallery.photos} 
+            photos={gallery.type === 'SELECTION' ? gallery.photos.filter((p: any) => p.is_final) : gallery.photos} 
             freeLimit={gallery.free_limit} 
             extraPrice={gallery.extra_photo_price} 
             galleryId={gallery.id}
             clientEmail={email}
+            isDeliveryMode={gallery.type === 'SELECTION' && gallery.status === 'DELIVERED'}
           />
         )}
       </main>

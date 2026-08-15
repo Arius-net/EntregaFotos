@@ -76,6 +76,7 @@ model Photo {
   gallery         Gallery         @relation(fields: [gallery_id], references: [id], onDelete: Cascade)
   thumbnail_url   String
   high_res_key    String
+  is_final        Boolean         @default(false)
   folder          String          @default("General")
   unlocked_photos UnlockedPhoto[]
   selected_photos SelectedPhoto[]

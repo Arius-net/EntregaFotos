@@ -105,3 +105,36 @@ export const sendPinEmail = async (to: string, pin: string) => {
     return false;
   }
 };
+
+export const sendDeliveryNotification = async (clientEmail: string, galleryName: string, accessCode: string) => {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('RESEND_API_KEY no está configurada. Simulando envío de correo:');
+    console.warn(`De: sistema@tu-dominio.com -> Para: ${clientEmail}`);
+    console.warn(`Galería ${galleryName} lista para descarga.`);
+    return { success: true, simulated: true };
+  }
+
+  try {
+    const galleryUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/gallery/${accessCode}`;
+    await resend.emails.send({
+      from: process.env.SMTP_FROM || 'EntregaFotos <onboarding@resend.dev>',
+      to: clientEmail,
+      subject: `¡Tus fotos editadas ya están listas! - ${galleryName}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+          <h2 style="color: #282e70; text-align: center;">¡Tus fotos están listas! 🎉</h2>
+          <p style="font-size: 16px; color: #444;">¡Buenas noticias! La edición de tus fotografías para la galería <strong>${galleryName}</strong> ha concluido.</p>
+          <p style="font-size: 16px; color: #444;">Ya puedes entrar a tu galería para verlas y descargarlas en alta resolución y sin marca de agua.</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${galleryUrl}" style="background-color: #2563eb; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Ir a mi Galería</a>
+          </div>
+          <p style="font-size: 14px; color: #666;">Te recomendamos descargarlas desde una computadora para mayor comodidad y asegurar la mejor calidad.</p>
+        </div>
+      `,
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('Error al enviar notificación de entrega:', error);
+    return { success: false, error };
+  }
+};
