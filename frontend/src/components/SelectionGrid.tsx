@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
+import { X, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
 interface Photo {
   id: number;
@@ -28,15 +29,62 @@ export default function SelectionGrid({
   const [activeFolder, setActiveFolder] = useState<string>('Todas');
   const [status, setStatus] = useState(galleryStatus);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Paginación Infinita
+  const [visibleCount, setVisibleCount] = useState(20);
+  
+  // Lightbox
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   useEffect(() => {
     // Extraer carpetas únicas
     const f = new Set(photos.map(p => p.folder || 'General'));
     setFolders(['Todas', ...Array.from(f)]);
     
+    // Resetear paginación al cambiar fotos
+    setVisibleCount(20);
+
     // Cargar selecciones actuales
     fetchSelections();
   }, [photos]);
+
+  // Infinite Scroll Listener
+  const handleScroll = useCallback(() => {
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
+      setVisibleCount(prev => prev + 20);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
+
+  // Keyboard navigation for Lightbox
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (lightboxIndex === null) return;
+      if (e.key === 'Escape') setLightboxIndex(null);
+      if (e.key === 'ArrowRight') nextPhoto();
+      if (e.key === 'ArrowLeft') prevPhoto();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxIndex]);
+
+  const nextPhoto = () => {
+    setLightboxIndex(prev => {
+      if (prev === null) return null;
+      return prev < filteredPhotos.length - 1 ? prev + 1 : 0;
+    });
+  };
+
+  const prevPhoto = () => {
+    setLightboxIndex(prev => {
+      if (prev === null) return null;
+      return prev > 0 ? prev - 1 : filteredPhotos.length - 1;
+    });
+  };
 
   const fetchSelections = async () => {
     try {
@@ -129,7 +177,10 @@ export default function SelectionGrid({
           {folders.map(folder => (
             <button
               key={folder}
-              onClick={() => setActiveFolder(folder)}
+              onClick={() => {
+                setActiveFolder(folder);
+                setVisibleCount(20); // Reiniciar al cambiar de pestaña
+              }}
               className={`whitespace-nowrap px-6 py-2.5 rounded-full text-sm font-medium transition-all ${
                 activeFolder === folder 
                   ? 'bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.3)] scale-105' 
@@ -144,13 +195,14 @@ export default function SelectionGrid({
 
       {/* Grid de Fotos (Estilo Masonry / Columnas) */}
       <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
-        {filteredPhotos.map((photo, index) => {
+        {filteredPhotos.slice(0, visibleCount).map((photo, index) => {
           const isSelected = selectedIds.includes(photo.id);
           return (
             <div 
               key={photo.id} 
-              className="relative group break-inside-avoid rounded-xl overflow-hidden shadow-lg border border-white/5"
+              className="relative group break-inside-avoid rounded-xl overflow-hidden shadow-lg border border-white/5 cursor-pointer"
               onContextMenu={(e) => e.preventDefault()} // Bloquear clic derecho
+              onClick={() => setLightboxIndex(index)}
             >
               <div className="relative">
                 <img 
@@ -163,10 +215,13 @@ export default function SelectionGrid({
                 
                 <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors pointer-events-none" />
 
-                {/* BOTÓN DE SELECCIÓN */}
+                {/* BOTÓN DE SELECCIÓN RÁPIDA (Opcional, evitar bubbling si solo quieren seleccionar directo) */}
                 {status !== 'SUBMITTED' && (
                   <button
-                    onClick={() => toggleSelection(photo.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleSelection(photo.id);
+                    }}
                     className="absolute inset-0 w-full h-full cursor-pointer flex items-center justify-center z-10"
                   >
                     <div className={`absolute top-3 right-3 w-8 h-8 rounded-full border-2 flex items-center justify-center shadow-lg transition-all ${
@@ -217,6 +272,82 @@ export default function SelectionGrid({
           </button>
         )}
       </div>
+
+      {/* VISOR LIGHTBOX */}
+      {lightboxIndex !== null && (
+        <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col backdrop-blur-md">
+          {/* Header Lightbox */}
+          <div className="flex justify-between items-center p-4 lg:p-6 text-white absolute top-0 left-0 w-full z-10 bg-gradient-to-b from-black/80 to-transparent">
+            <span className="text-gray-400 text-sm font-medium">
+              {lightboxIndex + 1} de {filteredPhotos.length}
+            </span>
+            <button onClick={() => setLightboxIndex(null)} className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors">
+              <X size={24} />
+            </button>
+          </div>
+
+          {/* Área principal */}
+          <div className="flex-1 flex items-center justify-center relative w-full h-full overflow-hidden" onContextMenu={(e) => e.preventDefault()}>
+            {/* Navegación Izquierda */}
+            <button 
+              onClick={prevPhoto}
+              className="absolute left-2 lg:left-8 p-3 bg-black/50 hover:bg-black/80 text-white rounded-full transition-all z-10 border border-white/10"
+            >
+              <ChevronLeft size={32} />
+            </button>
+
+            {/* Imagen Actual */}
+            <div className="relative max-w-[90vw] max-h-[85vh] transition-transform duration-300">
+              <img 
+                src={filteredPhotos[lightboxIndex].thumbnail_url} 
+                className={`max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl transition-all duration-300 ${
+                  selectedIds.includes(filteredPhotos[lightboxIndex].id) ? 'ring-4 ring-purple-500 scale-[0.98]' : ''
+                }`}
+                draggable={false}
+              />
+              
+              {/* Overlay Check */}
+              {selectedIds.includes(filteredPhotos[lightboxIndex].id) && (
+                <div className="absolute top-4 right-4 bg-purple-600 text-white rounded-full p-2 shadow-lg ring-2 ring-white">
+                  <Check size={24} strokeWidth={3} />
+                </div>
+              )}
+            </div>
+
+            {/* Navegación Derecha */}
+            <button 
+              onClick={nextPhoto}
+              className="absolute right-2 lg:right-8 p-3 bg-black/50 hover:bg-black/80 text-white rounded-full transition-all z-10 border border-white/10"
+            >
+              <ChevronRight size={32} />
+            </button>
+          </div>
+
+          {/* Footer Lightbox (Botón Selección) */}
+          <div className="absolute bottom-0 left-0 w-full p-6 pb-10 bg-gradient-to-t from-black/90 to-transparent flex justify-center z-10">
+            {status !== 'SUBMITTED' && (
+              <button
+                onClick={() => toggleSelection(filteredPhotos[lightboxIndex].id)}
+                className={`px-8 py-4 rounded-2xl font-bold text-lg shadow-xl transition-all flex items-center gap-3 ${
+                  selectedIds.includes(filteredPhotos[lightboxIndex].id)
+                    ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/30'
+                    : 'bg-purple-600 text-white hover:bg-purple-500 hover:scale-105'
+                }`}
+              >
+                {selectedIds.includes(filteredPhotos[lightboxIndex].id) ? (
+                  <>
+                    <X size={24} /> Quitar de la selección
+                  </>
+                ) : (
+                  <>
+                    <Check size={24} /> Elegir esta foto
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
