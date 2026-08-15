@@ -357,6 +357,9 @@ export const submitSelection = async (req: Request, res: Response) => {
       return fullName.replace(/^\d+-/, ''); // Limpiar el nombre
     });
 
+    // Ordenar naturalmente para que el correo se vea ordenado
+    photoNames.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
     await prisma.gallery.update({
       where: { id: gallery_id },
       data: { status: 'SUBMITTED' }

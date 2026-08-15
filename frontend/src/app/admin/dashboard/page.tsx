@@ -601,9 +601,24 @@ export default function AdminDashboard() {
               )}
             </div>
 
-            <div className="mt-6 pt-4 border-t border-gray-800 text-center">
-              <p className="text-gray-400 mb-4">Total seleccionadas: <strong className="text-white">{clientSelections.length} / {viewingSelectionFor.selection_limit}</strong></p>
-              <button onClick={() => setViewingSelectionFor(null)} className="px-6 py-2 bg-gray-800 text-white rounded-xl hover:bg-gray-700">Cerrar</button>
+            <div className="mt-6 pt-4 border-t border-gray-800 text-center flex flex-col md:flex-row justify-between items-center gap-4">
+              <p className="text-gray-400">Total seleccionadas: <strong className="text-white">{clientSelections.length} / {viewingSelectionFor.selection_limit}</strong></p>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => {
+                    const names = clientSelections.map(s => {
+                      const fullName = s.photo.high_res_key ? s.photo.high_res_key.split('/').pop() : `IMG_${s.id}`;
+                      return fullName.replace(/^\d+-/, '');
+                    });
+                    navigator.clipboard.writeText(names.join(', '));
+                    toast.success('Lista de nombres copiada al portapapeles');
+                  }} 
+                  className="px-6 py-2 bg-blue-600/20 text-blue-400 rounded-xl hover:bg-blue-600/30 transition-colors border border-blue-500/30"
+                >
+                  📋 Copiar Nombres
+                </button>
+                <button onClick={() => setViewingSelectionFor(null)} className="px-6 py-2 bg-gray-800 text-white rounded-xl hover:bg-gray-700">Cerrar</button>
+              </div>
             </div>
           </div>
         </div>
