@@ -6,8 +6,8 @@ import multer from 'multer';
 // Importar controladores
 import { createGallery, updateGallery, deleteGallery, getGallery, getGalleriesByPhotographer, getUnlockedPhotos, verifyAccess, getSelectedPhotos, toggleSelection, submitSelection, getAdminSelection } from './controllers/galleryController';
 import { uploadPhotos } from './controllers/photoController';
-import { downloadFreePhotos, downloadGalleryZip } from './controllers/downloadController';
-import { createPreference, verifyPayment, mpWebhook } from './controllers/paymentController';
+import { downloadFreePhotos, getDeliveryUrls } from './controllers/downloadController';
+import { createPreference, verifyPayment, openpayWebhook } from './controllers/paymentController';
 import { login, register, requestClientPin, verifyClientPin } from './controllers/authController';
 import { getSettings, updateSettings, uploadLandingPhoto } from './controllers/settingsController';
 import { createStoreItem, getStoreItems, updateStoreItem, deleteStoreItem, createStoreOrder, getMyStoreOrders, getAllStoreOrders } from './controllers/storeController';
@@ -76,12 +76,12 @@ app.get('/api/admin/store/orders', authenticateJWT, getAllStoreOrders);
 
 // Rutas de Descarga
 app.post('/api/downloads/free', authenticateJWT, downloadFreePhotos);
-app.get('/api/downloads/:gallery_id/zip', authenticateJWT, downloadGalleryZip);
+app.get('/api/downloads/:gallery_id/all-urls', authenticateJWT, getDeliveryUrls);
 
 // Rutas de Pagos (Mercado Pago)
 app.post('/api/payments/create', authenticateJWT, createPreference);
 app.post('/api/payments/verify', authenticateJWT, verifyPayment);
-app.post('/api/webhooks/mercadopago', mpWebhook);
+app.post('/api/webhooks/openpay', express.json(), openpayWebhook);
 
 app.listen(PORT, () => {
   console.log(`Servidor Backend corriendo en http://localhost:${PORT}`);

@@ -3,6 +3,15 @@ import prisma from '../prismaClient';
 import sharp from 'sharp';
 import { uploadFile, generateSecureDownloadUrl, deleteFilesBatch } from '../services/storage';
 
+const OPENPAY_MERCHANT_ID = process.env.OPENPAY_MERCHANT_ID || 'mktd5c3iik6oeyntnmy5';
+const OPENPAY_PRIVATE_KEY = process.env.OPENPAY_PRIVATE_KEY || 'sk_39a1ca0d5403487f89fb73dff4b13a30';
+const OPENPAY_BASE_URL = process.env.OPENPAY_BASE_URL || 'https://sandbox-api.openpay.mx/v1';
+
+const getOpenPayHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Basic ${Buffer.from(OPENPAY_PRIVATE_KEY + ':').toString('base64')}`
+});
+
 export const createStoreItem = async (req: Request, res: Response) => {
   try {
     const { title, description, price } = req.body;
@@ -143,7 +152,47 @@ export const createStoreOrder = async (req: Request, res: Response) => {
       }
     });
 
-    res.status(201).json({ order });
+    let init_point = null;
+
+    if (payment_method === 'OPENPAY') {
+      const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const client = await prisma.client.findUnique({ where: { id: client_id } });
+
+      const checkoutPayload = {
+        amount: total_amount,
+        description: `Orden Tienda #${order.id}`,
+        currency: "MXN",
+        redirect_url: `${FRONTEND_URL}/store/success`,
+        customer: {
+           name: client?.name || "Cliente",
+           last_name: "Tienda",
+           email: client?.email || "correo@ejemplo.com",
+           phone_number: "5555555555"
+        },
+        send_email: false,
+        expiration_date: new Date(Date.now() + 86400000).toISOString().split('T')[0] + "T23:59:00-06:00",
+        order_id: `STORE-${order.id}-${Date.now()}`
+      };
+
+      const opRes = await fetch(`${OPENPAY_BASE_URL}/${OPENPAY_MERCHANT_ID}/checkouts`, {
+        method: 'POST',
+        headers: getOpenPayHeaders(),
+        body: JSON.stringify(checkoutPayload)
+      });
+
+      if (opRes.ok) {
+        const opData = await opRes.json();
+        init_point = opData.checkout_link;
+        await prisma.storeOrder.update({
+          where: { id: order.id },
+          data: { payment_id: opData.id }
+        });
+      } else {
+        console.error('Error creando checkout en OpenPay para la tienda');
+      }
+    }
+
+    res.status(201).json({ order, init_point });
   } catch (error) {
     console.error('Error creating store order:', error);
     res.status(500).json({ error: 'Error interno' });

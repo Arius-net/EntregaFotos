@@ -162,25 +162,25 @@ export default function StorePage() {
         body: JSON.stringify({
           items: cart.map(i => ({ id: i.id, quantity: i.quantity, price: i.price })),
           total_amount: cartTotal,
-          payment_method: 'WHATSAPP' // Por ahora
+          payment_method: 'OPENPAY'
         })
       });
 
       if (!orderRes.ok) throw new Error('Error al crear orden');
       const orderData = await orderRes.json();
 
-      toast.success('Pedido registrado correctamente', { id: toastId });
+      toast.success('Redirigiendo a OpenPay...', { id: toastId });
       
-      // Limpiar carrito
+      // Limpiar carrito temporalmente (o podrías hacerlo en la página de éxito)
       setCart([]);
       localStorage.removeItem('photo_cart');
       setIsCartOpen(false);
 
-      // Build WhatsApp Message con número de orden
-      const orderList = cart.map(i => `- ${i.title} (Cant: ${i.quantity}) - $${(parseFloat(i.price) * i.quantity).toFixed(2)}`).join('%0A');
-      const message = `Hola! Soy ${user.email}. Acabo de realizar el pedido #${orderData.order.id} en tu tienda:%0A%0A${orderList}%0A%0A*Total a pagar: $${cartTotal.toFixed(2)}*%0A%0A¿Cómo procedemos con el pago?`;
-      
-      window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
+      if (orderData.init_point) {
+        window.location.href = orderData.init_point;
+      } else {
+        toast.error('Error al iniciar el pago', { id: toastId });
+      }
     } catch (error) {
       toast.error('Error al procesar el pedido', { id: toastId });
     }
@@ -390,9 +390,9 @@ export default function StorePage() {
                 </div>
                 <button 
                   onClick={handleCheckout}
-                  className="w-full bg-[#25D366] text-black font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(37,211,102,0.2)] hover:bg-[#20b858] transition-colors"
+                  className="w-full bg-[#8892f0] text-black font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(136,146,240,0.2)] hover:bg-[#6c76d9] transition-colors"
                 >
-                  Enviar Pedido (WhatsApp)
+                  Pagar con OpenPay
                 </button>
               </div>
             )}
