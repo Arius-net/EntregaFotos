@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../prismaClient';
 import sharp from 'sharp';
+import { getClipAuthHeader } from './paymentController';
 import { uploadFile, generateSecureDownloadUrl, deleteFilesBatch } from '../services/storage';
 
 export const createStoreItem = async (req: Request, res: Response) => {
@@ -212,10 +213,7 @@ export const createOrder = async (req: Request, res: Response) => {
 
     // 2. Crear Checkout con Clip
     const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
-    let authHeader = process.env.CLIP_API_KEY || '';
-    if (!authHeader.startsWith('Bearer') && !authHeader.startsWith('Basic')) {
-      authHeader = `Bearer ${authHeader}`;
-    }
+    const authHeader = getClipAuthHeader();
 
     const payload = {
       amount: Number(total_amount),

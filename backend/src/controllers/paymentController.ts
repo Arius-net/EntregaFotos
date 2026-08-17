@@ -2,6 +2,18 @@ import { Request, Response } from 'express';
 import prisma from '../prismaClient';
 import { generateSecureDownloadUrl } from '../services/storage';
 
+export const getClipAuthHeader = () => {
+  if (process.env.CLIP_API_KEY && process.env.CLIP_API_SECRET) {
+    const combined = `${process.env.CLIP_API_KEY}:${process.env.CLIP_API_SECRET}`;
+    return `Basic ${Buffer.from(combined).toString('base64')}`;
+  }
+  let authHeader = process.env.CLIP_API_KEY || '';
+  if (authHeader && !authHeader.startsWith('Bearer') && !authHeader.startsWith('Basic')) {
+    return `Bearer ${authHeader}`;
+  }
+  return authHeader;
+};
+
 export const createPreference = async (req: Request, res: Response) => {
   try {
     const { gallery_id, selected_photo_ids } = req.body;
@@ -47,11 +59,8 @@ export const createPreference = async (req: Request, res: Response) => {
     // 2. Crear Link de Pago en Clip
     const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
     
-    // Configurar API Key (Soporta Bearer o Basic dependiendo de cómo la guarde el usuario)
-    let authHeader = process.env.CLIP_API_KEY || '';
-    if (!authHeader.startsWith('Bearer') && !authHeader.startsWith('Basic')) {
-      authHeader = `Bearer ${authHeader}`;
-    }
+    // Configurar API Key
+    const authHeader = getClipAuthHeader();
 
     const payload = {
       amount: total_amount,
@@ -169,17 +178,43 @@ export const verifyPayment = async (req: Request, res: Response) => {
 
 export const clipWebhook = async (req: Request, res: Response) => {
   try {
-    // Aquí recibimos el payload de Clip
     const payload = req.body;
-    
-    // Dependiendo de la estructura del Webhook de Clip, buscamos el custom_reference
-    // Por lo general viene algo como payload.transaction.reference o payload.payment.custom_reference
-    
-    // Aquí implementas la lógica para marcar como completado:
-    // const transaction_id = ...
-    // await prisma.transaction.update({ ... status: 'completed' })
-    
-    console.log('[Clip Webhook Received]', payload);
+    console.log('[Clip Webhook Received]', JSON.stringify(payload));
+
+    const status = payload.status || payload.payment?.status;
+    const isApproved = status === 'APPROVED' || status === 'COMPLETED' || payload.type?.includes('APPROVED');
+
+    if (isApproved) {
+      const transactionId = payload.metadata?.transaction_id || payload.custom_reference || payload.payment?.custom_reference;
+      const orderId = payload.metadata?.order_id || payload.custom_reference; // Podría venir en cualquiera de los dos dependiendo de Clip
+
+      // Verificar si es de galería
+      if (transactionId) {
+        const txn = await prisma.transaction.findUnique({ where: { id: parseInt(transactionId) } });
+        if (txn && txn.status === 'pending') {
+          await prisma.transaction.update({
+            where: { id: parseInt(transactionId) },
+            data: { status: 'completed' }
+          });
+          console.log(`[Webhook] Transacción de Galería ${transactionId} completada.`);
+        }
+      }
+      
+      // Verificar si es de tienda (si pasamos order_id en metadata o custom_reference)
+      if (orderId && !transactionId) { 
+        // Nota: Solo hacemos esto si no encontramos transactionId para no confundir IDs si coinciden, 
+        // aunque order_id debería estar explícito en metadata.
+        const orderIdParsed = parseInt(payload.metadata?.order_id || orderId);
+        const order = await prisma.storeOrder.findUnique({ where: { id: orderIdParsed } });
+        if (order && order.status === 'PENDING') {
+          await prisma.storeOrder.update({
+            where: { id: orderIdParsed },
+            data: { status: 'PAID' }
+          });
+          console.log(`[Webhook] Orden de Tienda ${orderIdParsed} completada.`);
+        }
+      }
+    }
 
     res.status(200).send('OK');
   } catch (error) {

@@ -99,9 +99,14 @@ export default function LandingEditor() {
 
   const triggerUpload = (target: 'hero' | 'about' | 'portfolio' | 'logo') => {
     setUploadTarget(target);
-    setTimeout(() => {
-      fileInputRef.current?.click();
-    }, 0);
+    if (fileInputRef.current) {
+      if (target === 'hero' || target === 'portfolio') {
+        fileInputRef.current.multiple = true;
+      } else {
+        fileInputRef.current.multiple = false;
+      }
+      fileInputRef.current.click();
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,17 +137,22 @@ export default function LandingEditor() {
         }
       }
 
-      // Actualizar el estado local con las nuevas keys
+      // Actualizar el estado local con las nuevas keys y previsualizaciones
       const newSettings = { ...settings };
+      const objectUrls = files.map(file => URL.createObjectURL(file));
       
       if (uploadTarget === 'hero') {
         newSettings.hero_images = [...(newSettings.hero_images || []), ...uploadedKeys];
+        newSettings.hero_images_urls = [...(newSettings.hero_images_urls || []), ...objectUrls];
       } else if (uploadTarget === 'portfolio') {
         newSettings.portfolio_images = [...(newSettings.portfolio_images || []), ...uploadedKeys];
+        newSettings.portfolio_images_urls = [...(newSettings.portfolio_images_urls || []), ...objectUrls];
       } else if (uploadTarget === 'about') {
-        newSettings.about_image = uploadedKeys[0]; // Replace single image
+        newSettings.about_image = uploadedKeys[0];
+        newSettings.about_image_url = objectUrls[0];
       } else if (uploadTarget === 'logo') {
-        newSettings.logo_image = uploadedKeys[0]; // Replace logo
+        newSettings.logo_image = uploadedKeys[0];
+        newSettings.logo_image_url = objectUrls[0];
       }
 
       setSettings(newSettings);
