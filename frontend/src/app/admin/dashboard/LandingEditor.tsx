@@ -41,7 +41,8 @@ export default function LandingEditor() {
   
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadTarget, setUploadTarget] = useState<'hero' | 'about' | 'portfolio' | 'logo' | null>(null);
+  const uploadTargetRef = useRef<'hero' | 'about' | 'portfolio' | 'logo' | null>(null);
+  const [uploadTargetState, setUploadTargetState] = useState<'hero' | 'about' | 'portfolio' | 'logo' | null>(null);
 
   useEffect(() => {
     fetchSettings();
@@ -98,7 +99,8 @@ export default function LandingEditor() {
   };
 
   const triggerUpload = (target: 'hero' | 'about' | 'portfolio' | 'logo') => {
-    setUploadTarget(target);
+    uploadTargetRef.current = target;
+    setUploadTargetState(target);
     if (fileInputRef.current) {
       if (target === 'hero' || target === 'portfolio') {
         fileInputRef.current.multiple = true;
@@ -110,7 +112,8 @@ export default function LandingEditor() {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0 || !uploadTarget || !settings) return;
+    const target = uploadTargetRef.current;
+    if (!e.target.files || e.target.files.length === 0 || !target || !settings) return;
 
     const files = Array.from(e.target.files);
     setUploading(true);
@@ -141,16 +144,16 @@ export default function LandingEditor() {
       const newSettings = { ...settings };
       const objectUrls = files.map(file => URL.createObjectURL(file));
       
-      if (uploadTarget === 'hero') {
+      if (target === 'hero') {
         newSettings.hero_images = [...(newSettings.hero_images || []), ...uploadedKeys];
         newSettings.hero_images_urls = [...(newSettings.hero_images_urls || []), ...objectUrls];
-      } else if (uploadTarget === 'portfolio') {
+      } else if (target === 'portfolio') {
         newSettings.portfolio_images = [...(newSettings.portfolio_images || []), ...uploadedKeys];
         newSettings.portfolio_images_urls = [...(newSettings.portfolio_images_urls || []), ...objectUrls];
-      } else if (uploadTarget === 'about') {
+      } else if (target === 'about') {
         newSettings.about_image = uploadedKeys[0];
         newSettings.about_image_url = objectUrls[0];
-      } else if (uploadTarget === 'logo') {
+      } else if (target === 'logo') {
         newSettings.logo_image = uploadedKeys[0];
         newSettings.logo_image_url = objectUrls[0];
       }
@@ -161,7 +164,8 @@ export default function LandingEditor() {
       toast.error('Error al subir archivos', { id: toastId });
     } finally {
       setUploading(false);
-      setUploadTarget(null);
+      uploadTargetRef.current = null;
+      setUploadTargetState(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -198,7 +202,7 @@ export default function LandingEditor() {
 
       <input 
         type="file" 
-        multiple={uploadTarget === 'hero' || uploadTarget === 'portfolio'} 
+        multiple={uploadTargetState === 'hero' || uploadTargetState === 'portfolio'} 
         accept="image/jpeg, image/png, image/webp" 
         className="hidden" 
         ref={fileInputRef}
