@@ -70,7 +70,7 @@ export default function LandingPage() {
       </nav>
 
       {/* HERO SECTION */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative h-[80vh] min-h-[600px] flex items-center justify-center overflow-hidden">
         {currentHeroImages.map((img: string, idx: number) => (
           <div 
             key={idx}
