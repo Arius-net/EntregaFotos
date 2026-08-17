@@ -2,12 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import multer from 'multer';
+import { rateLimit } from 'express-rate-limit';
 
 // Importar controladores
 import { createGallery, updateGallery, deleteGallery, getGallery, getGalleriesByPhotographer, getUnlockedPhotos, verifyAccess, getSelectedPhotos, toggleSelection, submitSelection, getAdminSelection } from './controllers/galleryController';
 import { uploadPhotos } from './controllers/photoController';
-import { downloadFreePhotos, downloadGalleryZip } from './controllers/downloadController';
-import { createPreference, verifyPayment, mpWebhook } from './controllers/paymentController';
+import { downloadFreePhotos, downloadAllFinalPhotos } from './controllers/downloadController';
+import { createPreference, verifyPayment, clipWebhook } from './controllers/paymentController';
 import { login, register, requestClientPin, verifyClientPin } from './controllers/authController';
 import { getSettings, updateSettings, uploadLandingPhoto } from './controllers/settingsController';
 import { createStoreItem, getStoreItems, updateStoreItem, deleteStoreItem, createStoreOrder, getMyStoreOrders, getAllStoreOrders } from './controllers/storeController';
@@ -36,11 +37,18 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 }
 });
 
+// Rate limiting para seguridad (Previene fuerza bruta en PIN y Login)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 20, // 20 intentos por IP
+  message: { error: 'Demasiados intentos, por favor intenta más tarde.' }
+});
+
 // Rutas de Auth
-app.post('/api/auth/register', register);
-app.post('/api/auth/login', login);
-app.post('/api/auth/client/request-pin', requestClientPin);
-app.post('/api/auth/client/verify-pin', verifyClientPin);
+app.post('/api/auth/register', authLimiter, register);
+app.post('/api/auth/login', authLimiter, login);
+app.post('/api/auth/client/request-pin', authLimiter, requestClientPin);
+app.post('/api/auth/client/verify-pin', authLimiter, verifyClientPin);
 
 // Rutas de Galerías
 app.post('/api/galleries', authenticateJWT, createGallery);
@@ -76,12 +84,12 @@ app.get('/api/admin/store/orders', authenticateJWT, getAllStoreOrders);
 
 // Rutas de Descarga
 app.post('/api/downloads/free', authenticateJWT, downloadFreePhotos);
-app.get('/api/downloads/:gallery_id/zip', authenticateJWT, downloadGalleryZip);
+app.get('/api/downloads/:gallery_id/all', authenticateJWT, downloadAllFinalPhotos);
 
 // Rutas de Pagos (Mercado Pago)
 app.post('/api/payments/create', authenticateJWT, createPreference);
 app.post('/api/payments/verify', authenticateJWT, verifyPayment);
-app.post('/api/webhooks/mercadopago', mpWebhook);
+app.post('/api/webhooks/clip', express.json(), clipWebhook);
 
 app.listen(PORT, () => {
   console.log(`Servidor Backend corriendo en http://localhost:${PORT}`);

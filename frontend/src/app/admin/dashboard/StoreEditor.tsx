@@ -21,6 +21,7 @@ export default function StoreEditor() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('10.00');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -52,22 +53,29 @@ export default function StoreEditor() {
     }
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      toast.error('Debes seleccionar una foto');
+      return;
+    }
     if (!title || !price) {
       toast.error('Debes ponerle un título y precio antes de subir la foto');
-      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
 
-    const file = e.target.files[0];
     setUploading(true);
     const toastId = toast.loading('Subiendo foto a la tienda...');
 
     try {
       const token = localStorage.getItem('token');
       const formData = new FormData();
-      formData.append('photo', file);
+      formData.append('photo', selectedFile);
       formData.append('title', title);
       formData.append('description', description);
       formData.append('price', price);
@@ -84,6 +92,7 @@ export default function StoreEditor() {
         setTitle('');
         setDescription('');
         setPrice('10.00');
+        setSelectedFile(null);
       } else {
         toast.error('Error al subir foto', { id: toastId });
       }
@@ -207,22 +216,32 @@ export default function StoreEditor() {
             </div>
           </div>
 
-          <div className="flex flex-col justify-center">
+          <div className="flex flex-col justify-center gap-4">
             <input 
               type="file" 
               accept="image/jpeg, image/png, image/webp" 
               className="hidden" 
               ref={fileInputRef}
-              onChange={handleUpload}
+              onChange={handleFileSelect}
             />
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full h-full min-h-[150px] border-2 border-dashed border-gray-700 hover:border-amber-500 rounded-xl flex flex-col items-center justify-center text-gray-400 cursor-pointer hover:text-amber-500 hover:bg-amber-500/5 transition-all relative overflow-hidden"
+            >
+              {selectedFile ? (
+                <img src={URL.createObjectURL(selectedFile)} alt="Preview" className="absolute inset-0 w-full h-full object-cover opacity-50" />
+              ) : null}
+              <span className="text-4xl mb-2 z-10">📸</span>
+              <span className="z-10 text-center px-4 font-medium">{selectedFile ? selectedFile.name : 'Seleccionar Foto'}</span>
+            </div>
+            
             <button 
               type="button"
-              disabled={uploading}
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full h-full min-h-[150px] border-2 border-dashed border-gray-700 hover:border-amber-500 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:text-amber-500 hover:bg-amber-500/5 transition-all"
+              disabled={uploading || !selectedFile}
+              onClick={handleUpload}
+              className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-gray-900 font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg"
             >
-              <span className="text-4xl mb-2">{uploading ? '⏳' : '📸'}</span>
-              <span>{uploading ? 'Subiendo y procesando...' : 'Seleccionar Foto y Subir'}</span>
+              {uploading ? 'Subiendo y procesando...' : 'Subir a la Tienda'}
             </button>
           </div>
         </div>

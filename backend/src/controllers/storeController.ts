@@ -186,6 +186,85 @@ export const getMyStoreOrders = async (req: Request, res: Response) => {
   }
 };
 
+export const createOrder = async (req: Request, res: Response) => {
+  try {
+    const { items, total_amount, shipping_address } = req.body;
+    const client_id = (req as any).user?.id;
+
+    if (!client_id) return res.status(401).json({ error: 'No autorizado' });
+
+    // 1. Crear Orden
+    const order = await prisma.storeOrder.create({
+      data: {
+        client_id,
+        total_amount: Number(total_amount),
+        status: 'PENDING',
+        payment_method: 'CLIP',
+        items: {
+          create: items.map((item: any) => ({
+            store_item_id: item.store_item_id,
+            quantity: item.quantity,
+            price_at_time: Number(item.unit_price)
+          }))
+        }
+      }
+    });
+
+    // 2. Crear Checkout con Clip
+    const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+    let authHeader = process.env.CLIP_API_KEY || '';
+    if (!authHeader.startsWith('Bearer') && !authHeader.startsWith('Basic')) {
+      authHeader = `Bearer ${authHeader}`;
+    }
+
+    const payload = {
+      amount: Number(total_amount),
+      currency: "MXN",
+      purchase_description: `Compra en Tienda Oficial - Orden #${order.id}`,
+      redirection_url: {
+        success: `${FRONTEND_URL}/store/success?order=${order.id}`,
+        error: `${FRONTEND_URL}/store?error=payment_failed`,
+        default: `${FRONTEND_URL}/store`
+      },
+      custom_reference: order.id.toString(),
+      metadata: {
+        order_id: order.id.toString()
+      }
+    };
+
+    const resClip = await fetch('https://api.payclip.com/v2/checkout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': authHeader
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!resClip.ok) {
+      const err = await resClip.text();
+      console.error('Error from Clip API:', err);
+      throw new Error('No se pudo crear el pago en Clip');
+    }
+
+    const clipData = await resClip.json();
+
+    await prisma.storeOrder.update({
+      where: { id: order.id },
+      data: { payment_id: clipData.payment_request_id }
+    });
+
+    res.status(200).json({ 
+      preferenceId: clipData.payment_request_id,
+      init_point: clipData.payment_request_url 
+    });
+
+  } catch (error) {
+    console.error('Error creating order:', error);
+    res.status(500).json({ error: 'Error processing order' });
+  }
+};
+
 export const getAllStoreOrders = async (req: Request, res: Response) => {
   try {
     const orders = await prisma.storeOrder.findMany({

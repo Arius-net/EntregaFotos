@@ -150,7 +150,7 @@ export default function StorePage() {
       return;
     }
 
-    const toastId = toast.loading('Procesando pedido...');
+    const toastId = toast.loading('Preparando pago seguro...');
     try {
       const token = localStorage.getItem('token');
       const orderRes = await fetch(`${API_URL}/api/store/orders`, {
@@ -160,27 +160,23 @@ export default function StorePage() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          items: cart.map(i => ({ id: i.id, quantity: i.quantity, price: i.price })),
+          items: cart.map(i => ({ store_item_id: i.id, quantity: i.quantity, unit_price: i.price })),
           total_amount: cartTotal,
-          payment_method: 'WHATSAPP' // Por ahora
+          shipping_address: "Not required"
         })
       });
 
       if (!orderRes.ok) throw new Error('Error al crear orden');
-      const orderData = await orderRes.json();
-
-      toast.success('Pedido registrado correctamente', { id: toastId });
+      const data = await orderRes.json();
       
       // Limpiar carrito
       setCart([]);
       localStorage.removeItem('photo_cart');
       setIsCartOpen(false);
 
-      // Build WhatsApp Message con número de orden
-      const orderList = cart.map(i => `- ${i.title} (Cant: ${i.quantity}) - $${(parseFloat(i.price) * i.quantity).toFixed(2)}`).join('%0A');
-      const message = `Hola! Soy ${user.email}. Acabo de realizar el pedido #${orderData.order.id} en tu tienda:%0A%0A${orderList}%0A%0A*Total a pagar: $${cartTotal.toFixed(2)}*%0A%0A¿Cómo procedemos con el pago?`;
-      
-      window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
+      toast.success('Redirigiendo a Clip...', { id: toastId });
+      window.location.href = data.init_point;
+
     } catch (error) {
       toast.error('Error al procesar el pedido', { id: toastId });
     }

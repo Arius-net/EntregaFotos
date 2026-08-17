@@ -298,8 +298,8 @@ export default function LandingPage() {
               &copy; {new Date().getFullYear()} {settings?.brand_name || 'Quevedo Contigo'}. Todos los derechos reservados.
             </p>
             <div className="flex gap-4 text-sm text-gray-500">
-              <button onClick={() => router.push('/legal/privacidad')} className="hover:text-white transition-colors">Aviso de Privacidad</button>
-              <button onClick={() => router.push('/legal/terminos')} className="hover:text-white transition-colors">Términos y Condiciones</button>
+              <button onClick={() => router.push('/privacidad')} className="hover:text-white transition-colors">Aviso de Privacidad</button>
+              <button onClick={() => router.push('/terminos')} className="hover:text-white transition-colors">Términos y Condiciones</button>
             </div>
           </div>
         </div>

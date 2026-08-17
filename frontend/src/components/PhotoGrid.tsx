@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
+import { X, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
 interface Photo {
   id: number;
@@ -25,6 +26,9 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
   const [unlockedIds, setUnlockedIds] = useState<Set<number>>(new Set());
   const [freeUnlockedCount, setFreeUnlockedCount] = useState<number>(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Lightbox
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   // Lista de carpetas y selección (ordenadas alfabéticamente)
   const folders = Array.from(new Set(photos.map(p => p.folder || 'General'))).sort((a, b) => a.localeCompare(b));
@@ -50,6 +54,34 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
   useEffect(() => {
     fetchUnlockedPhotos();
   }, [galleryId, clientEmail]);
+
+  const filteredPhotos = photos.filter(p => (p.folder || 'General') === activeFolder);
+
+  // Keyboard navigation for Lightbox
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (lightboxIndex === null) return;
+      if (e.key === 'Escape') setLightboxIndex(null);
+      if (e.key === 'ArrowRight') nextPhoto();
+      if (e.key === 'ArrowLeft') prevPhoto();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxIndex, filteredPhotos.length]);
+
+  const nextPhoto = () => {
+    setLightboxIndex(prev => {
+      if (prev === null) return null;
+      return prev < filteredPhotos.length - 1 ? prev + 1 : 0;
+    });
+  };
+
+  const prevPhoto = () => {
+    setLightboxIndex(prev => {
+      if (prev === null) return null;
+      return prev > 0 ? prev - 1 : filteredPhotos.length - 1;
+    });
+  };
 
   const toggleSelection = (id: number) => {
     const newSelection = new Set(selectedIds);
@@ -83,15 +115,12 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
         toast.success('Descarga iniciada de fotos desbloqueadas', { id: toastId });
         
         for (const item of data.urls) {
-          // Usamos a y download para no tener problema con bloqueos de iframes
           const a = document.createElement('a');
           a.href = item.url;
-          // Esto forzará la descarga en navegadores modernos si el Content-Disposition es attachment
           a.download = `photo_${item.photoId}.jpg`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          await new Promise(resolve => setTimeout(resolve, 800));
         }
 
         // Limpiamos selección tras descargar para evitar confusión
@@ -127,7 +156,7 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
 
       if (res.ok) {
         const data = await res.json();
-        toast.success('Redirigiendo a Mercado Pago...', { id: toastId });
+        toast.success('Redirigiendo a Clip...', { id: toastId });
         window.location.href = data.init_point;
       } else {
         toast.error('Error al iniciar el pago', { id: toastId });
@@ -139,30 +168,30 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
     }
   };
 
-  const handleDownloadZip = async () => {
+  const handleDownloadAll = async () => {
     setIsProcessing(true);
-    const toastId = toast.loading('Generando tu archivo ZIP... Esto puede tomar unos minutos.');
+    const toastId = toast.loading('Preparando descargas...');
     try {
       const token = localStorage.getItem('client_token');
-      const res = await fetch(`${API_URL}/api/downloads/${galleryId}/zip`, {
+      const res = await fetch(`${API_URL}/api/downloads/${galleryId}/all`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
       if (res.ok) {
-        toast.success('¡ZIP generado! Descargando...', { id: toastId });
-        // Trigger download directly from the backend stream response
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Entrega_Final.zip`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
+        const data = await res.json();
+        toast.success('Iniciando descargas múltiples...', { id: toastId });
+        
+        for (const item of data.urls) {
+          const a = document.createElement('a');
+          a.href = item.url;
+          a.download = `photo_${item.photoId}.jpg`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }
       } else {
-        toast.error('Error al generar el ZIP', { id: toastId });
+        toast.error('Error al obtener URLs de descarga', { id: toastId });
       }
     } catch (e) {
       toast.error('Error de conexión', { id: toastId });
@@ -180,8 +209,6 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
   const extraPhotos = isOverLimit ? newSelectedCount - remainingFreePhotos : 0;
   const totalCost = extraPhotos * extraPrice;
   const areAllSelectedAlreadyUnlocked = selectedCount > 0 && newSelectedCount === 0;
-
-  const filteredPhotos = photos.filter(p => (p.folder || 'General') === activeFolder);
 
   return (
     <>
@@ -204,38 +231,59 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
         </div>
       )}
 
-      {/* Grid Masonry Moderno */}
       <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4 pb-32">
-        {filteredPhotos.map((photo) => {
+        {filteredPhotos.map((photo, index) => {
           const isSelected = selectedIds.has(photo.id);
           const isUnlocked = unlockedIds.has(photo.id);
 
           return (
             <div
               key={photo.id}
-              onClick={() => toggleSelection(photo.id)}
-              className={`relative cursor-pointer group break-inside-avoid overflow-hidden rounded-2xl transition-all duration-300 ${
+              onClick={() => setLightboxIndex(index)}
+              className={`relative cursor-pointer group break-inside-avoid overflow-hidden rounded-2xl transition-all duration-300 shadow-lg border border-white/5 ${
                 isSelected ? 'ring-4 ring-blue-500 scale-[0.98]' : 'hover:scale-[1.02] hover:shadow-2xl'
               }`}
             >
               {/* Imagen con desenfoque suave al hacer hover */}
-              <img
-                src={photo.thumbnail_url}
-                alt={`Photo ${photo.id}`}
-                className={`w-full h-auto object-cover transition-transform duration-700 ${
-                  isSelected ? 'brightness-110' : 'group-hover:brightness-90 group-hover:scale-105'
-                }`}
-                loading="lazy"
-              />
+              <div className="relative">
+                <img
+                  src={photo.thumbnail_url}
+                  alt={`Photo ${photo.id}`}
+                  className={`w-full h-auto object-cover transition-transform duration-700 ${
+                    isSelected ? 'brightness-110' : 'group-hover:brightness-90 group-hover:scale-105'
+                  }`}
+                  loading="lazy"
+                  onContextMenu={(e) => e.preventDefault()}
+                  onDragStart={(e) => e.preventDefault()}
+                />
+                
+                {/* Overlay Check Rápido */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleSelection(photo.id);
+                  }}
+                  className="absolute inset-0 w-full h-full cursor-pointer flex items-center justify-center z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <div className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all ${
+                    isSelected 
+                      ? 'bg-blue-500 ring-2 ring-white opacity-100' 
+                      : 'bg-black/60 border border-white/70 backdrop-blur-md'
+                  }`}>
+                    {isSelected && <span className="text-white text-xs font-bold">✓</span>}
+                  </div>
+                </button>
+              </div>
 
-              {/* Indicadores flotantes (Candado / Check) */}
-              <div className="absolute top-3 right-3 flex flex-col gap-2">
-                {!isUnlocked && (
+              {/* Indicadores flotantes (Candado) */}
+              <div className="absolute top-3 right-3 flex flex-col gap-2 pointer-events-none">
+                {!isUnlocked && !isSelected && (
                   <div className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-lg">
                     <span className="text-white text-xs">🔒</span>
                   </div>
                 )}
                 
+                {/* Indicador persistente si ya está seleccionado pero no hovereado */}
                 {isSelected && (
                   <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.6)] animate-pulse">
                     <span className="text-white text-xs font-bold">✓</span>
@@ -264,11 +312,11 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
             </div>
             <div className="w-full md:w-auto">
               <button
-                onClick={handleDownloadZip}
+                onClick={handleDownloadAll}
                 disabled={isProcessing}
                 className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-8 py-3 rounded-xl font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isProcessing ? 'Generando ZIP...' : '📦 Descargar Galería en ZIP'}
+                {isProcessing ? 'Procesando...' : '⬇️ Descargar Todas (Directo)'}
               </button>
             </div>
           </div>
@@ -337,6 +385,76 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
           </div>
         )}
       </div>
+
+      {/* VISOR LIGHTBOX */}
+      {lightboxIndex !== null && (
+        <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col backdrop-blur-md">
+          {/* Header Lightbox */}
+          <div className="flex justify-between items-center p-4 lg:p-6 text-white absolute top-0 left-0 w-full z-10 bg-gradient-to-b from-black/80 to-transparent">
+            <span className="text-gray-400 text-sm font-medium">
+              {lightboxIndex + 1} de {filteredPhotos.length}
+            </span>
+            <button onClick={() => setLightboxIndex(null)} className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors">
+              <X size={24} />
+            </button>
+          </div>
+
+          {/* Área principal */}
+          <div className="flex-1 flex items-center justify-center relative w-full h-full overflow-hidden" onContextMenu={(e) => e.preventDefault()}>
+            <button 
+              onClick={prevPhoto}
+              className="absolute left-2 lg:left-8 p-3 bg-black/50 hover:bg-black/80 text-white rounded-full transition-all z-10 border border-white/10"
+            >
+              <ChevronLeft size={32} />
+            </button>
+
+            <div className="relative max-w-[90vw] max-h-[85vh] transition-transform duration-300">
+              <img 
+                src={filteredPhotos[lightboxIndex].thumbnail_url} 
+                className={`max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl transition-all duration-300 ${
+                  selectedIds.has(filteredPhotos[lightboxIndex].id) ? 'ring-4 ring-blue-500 scale-[0.98]' : ''
+                }`}
+                draggable={false}
+              />
+              
+              {!unlockedIds.has(filteredPhotos[lightboxIndex].id) && (
+                <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md rounded-full p-2 shadow-lg border border-white/20">
+                  <span className="text-white text-xs">🔒 Bloqueada</span>
+                </div>
+              )}
+            </div>
+
+            <button 
+              onClick={nextPhoto}
+              className="absolute right-2 lg:right-8 p-3 bg-black/50 hover:bg-black/80 text-white rounded-full transition-all z-10 border border-white/10"
+            >
+              <ChevronRight size={32} />
+            </button>
+          </div>
+
+          {/* Footer Lightbox (Botón Selección) */}
+          <div className="absolute bottom-0 left-0 w-full p-6 pb-10 bg-gradient-to-t from-black/90 to-transparent flex justify-center z-10">
+            <button
+              onClick={() => toggleSelection(filteredPhotos[lightboxIndex].id)}
+              className={`px-8 py-4 rounded-2xl font-bold text-lg shadow-xl transition-all flex items-center gap-3 ${
+                selectedIds.has(filteredPhotos[lightboxIndex].id)
+                  ? 'bg-gray-800 text-white hover:bg-gray-700 border border-gray-600'
+                  : 'bg-blue-600 text-white hover:bg-blue-500 hover:scale-105'
+              }`}
+            >
+              {selectedIds.has(filteredPhotos[lightboxIndex].id) ? (
+                <>
+                  <X size={24} /> Quitar de la selección
+                </>
+              ) : (
+                <>
+                  <Check size={24} /> Elegir esta foto
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

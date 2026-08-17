@@ -99,7 +99,9 @@ export default function LandingEditor() {
 
   const triggerUpload = (target: 'hero' | 'about' | 'portfolio' | 'logo') => {
     setUploadTarget(target);
-    fileInputRef.current?.click();
+    setTimeout(() => {
+      fileInputRef.current?.click();
+    }, 0);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
