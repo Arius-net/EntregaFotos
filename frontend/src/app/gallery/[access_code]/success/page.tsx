@@ -12,9 +12,8 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ acces
   const [status, setStatus] = useState('Verificando tu pago...');
   const [isSuccess, setIsSuccess] = useState<boolean | null>(null);
   
-  // OpenPay redirige con ?id=tr_xxx o puedes pasar otros params
-  const payment_id = searchParams.get('id') || searchParams.get('payment_id');
-  const transaction_id = searchParams.get('transaction_id') || searchParams.get('preference_id');
+  const payment_id = searchParams.get('payment_id');
+  const preference_id = searchParams.get('preference_id');
 
   useEffect(() => {
     if (!payment_id) {
@@ -32,12 +31,12 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ acces
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ payment_id, transaction_id })
+          body: JSON.stringify({ payment_id, preference_id })
         });
 
         if (res.ok || res.status === 202) {
           if (res.status === 202) {
-            setStatus('Tu pago está siendo procesado por OpenPay. Tus fotos se desbloquearán cuando se apruebe.');
+            setStatus('Tu pago está siendo procesado por Mercado Pago. Tus fotos se desbloquearán cuando se apruebe.');
             setIsSuccess(null);
             toast.info('Pago en proceso');
           } else {
@@ -57,7 +56,7 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ acces
     };
 
     verifyPayment();
-  }, [payment_id, transaction_id, API_URL]);
+  }, [payment_id, preference_id, API_URL]);
 
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">

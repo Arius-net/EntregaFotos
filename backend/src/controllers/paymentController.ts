@@ -1,15 +1,9 @@
 import { Request, Response } from 'express';
 import prisma from '../prismaClient';
 import { generateSecureDownloadUrl } from '../services/storage';
+import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
 
-const OPENPAY_MERCHANT_ID = process.env.OPENPAY_MERCHANT_ID || 'mktd5c3iik6oeyntnmy5';
-const OPENPAY_PRIVATE_KEY = process.env.OPENPAY_PRIVATE_KEY || 'sk_39a1ca0d5403487f89fb73dff4b13a30';
-const OPENPAY_BASE_URL = process.env.OPENPAY_BASE_URL || 'https://sandbox-api.openpay.mx/v1';
-
-const getOpenPayHeaders = () => ({
-  'Content-Type': 'application/json',
-  'Authorization': `Basic ${Buffer.from(OPENPAY_PRIVATE_KEY + ':').toString('base64')}`
-});
+const mpClient = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN || 'TEST-dummy' });
 
 export const createPreference = async (req: Request, res: Response) => {
   try {
@@ -53,42 +47,38 @@ export const createPreference = async (req: Request, res: Response) => {
       }
     });
 
-    // 2. Crear Checkout en OpenPay
+    // 2. Crear Preferencia en Mercado Pago
+    const preference = new Preference(mpClient);
     const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const BACKEND_URL = process.env.BACKEND_URL;
 
-    const checkoutPayload = {
-      amount: total_amount,
-      description: `Fotos Extra - ${gallery.name}`,
-      currency: "MXN",
-      redirect_url: `${FRONTEND_URL}/gallery/${gallery.access_code}/success`,
-      customer: {
-         name: client.name || "Cliente",
-         last_name: "Galería",
-         email: client.email,
-         phone_number: "5555555555" // OpenPay requiere un teléfono válido o formato, ponemos dummy seguro
+    const prefBody: any = {
+      items: [
+        {
+          id: 'fotos_extra',
+          title: `Fotos Extra - ${gallery.name}`,
+          quantity: extraPhotos,
+          unit_price: Number(gallery.extra_photo_price)
+        }
+      ],
+      back_urls: {
+        success: `${FRONTEND_URL}/gallery/${gallery.access_code}/success`,
+        failure: `${FRONTEND_URL}/gallery/${gallery.access_code}`,
+        pending: `${FRONTEND_URL}/gallery/${gallery.access_code}`
       },
-      send_email: false,
-      expiration_date: new Date(Date.now() + 86400000).toISOString().split('T')[0] + "T23:59:00-06:00",
-      order_id: `GAL-${transaction.id}-${Date.now()}` // Unique per retry
+      external_reference: transaction.id.toString()
     };
 
-    const opRes = await fetch(`${OPENPAY_BASE_URL}/${OPENPAY_MERCHANT_ID}/checkouts`, {
-      method: 'POST',
-      headers: getOpenPayHeaders(),
-      body: JSON.stringify(checkoutPayload)
-    });
-
-    const opData = await opRes.json();
-
-    if (!opRes.ok) {
-      console.error('OpenPay Checkout Error:', opData);
-      return res.status(500).json({ error: 'Error configurando pasarela de pagos (OpenPay)' });
+    if (BACKEND_URL) {
+      prefBody.notification_url = `${BACKEND_URL}/api/webhooks/mercadopago`;
     }
 
-    // Actualizar transacción con el ID de sesión de pago
+    const prefResponse = await preference.create({ body: prefBody });
+
+    // Actualizar transacción con el ID de preferencia real
     await prisma.transaction.update({
       where: { id: transaction.id },
-      data: { payment_session_id: opData.id }
+      data: { mp_preference_id: prefResponse.id }
     });
 
     // 3. Guardar las fotos como pendientes
@@ -118,59 +108,47 @@ export const createPreference = async (req: Request, res: Response) => {
     }
 
     res.status(200).json({ 
-      preferenceId: opData.id, 
+      preferenceId: prefResponse.id, 
       transactionId: transaction.id, 
       amount: total_amount,
-      init_point: opData.checkout_link // En OpenPay es checkout_link
+      init_point: prefResponse.init_point // La URL a donde el frontend debe redirigir
     });
   } catch (error) {
-    console.error('Error creating checkout:', error);
+    console.error('Error creating preference:', error);
     res.status(500).json({ error: 'Error processing payment request' });
   }
 };
 
 export const verifyPayment = async (req: Request, res: Response) => {
   try {
-    const { payment_id, preference_id, transaction_id } = req.body;
+    const { payment_id, preference_id } = req.body;
     
-    // OpenPay retorna `id` (transaction_id en frontend o payment_id en la redirección)
-    const opChargeId = payment_id; 
+    // Consultar el SDK de MercadoPago
+    const paymentClient = new Payment(mpClient);
+    const payment = await paymentClient.get({ id: payment_id });
 
-    const opRes = await fetch(`${OPENPAY_BASE_URL}/${OPENPAY_MERCHANT_ID}/charges/${opChargeId}`, {
-      headers: getOpenPayHeaders()
-    });
-
-    const payment = await opRes.json();
-
-    if (!opRes.ok) {
-      return res.status(400).json({ error: 'El pago no existe o hubo un error consultando OpenPay' });
-    }
-
-    if (payment.status === 'in_progress') {
+    if (payment.status === 'in_process' || payment.status === 'pending') {
       return res.status(202).json({ message: 'Pago en proceso' });
     }
 
-    if (payment.status !== 'completed') {
-      return res.status(400).json({ error: `El pago tiene estado: ${payment.status}` });
+    if (payment.status !== 'approved') {
+      return res.status(400).json({ error: 'El pago no está aprobado' });
     }
 
-    // Extraer ID de la transacción desde order_id (Ej: "GAL-123-170...")
-    const parts = payment.order_id?.split('-');
-    const dbTransactionId = parts && parts.length > 1 ? parseInt(parts[1]) : transaction_id;
-
-    if (!dbTransactionId) {
-      return res.status(400).json({ error: 'Pago no relacionado con una transacción válida' });
+    const transaction_id = payment.external_reference || payment.metadata?.transaction_id;
+    if (!transaction_id) {
+      return res.status(400).json({ error: 'Pago no relacionado con la app' });
     }
 
     // Actualizar base de datos
     await prisma.transaction.update({
-      where: { id: dbTransactionId },
-      data: { status: 'completed', payment_id: opChargeId }
+      where: { id: parseInt(transaction_id) },
+      data: { status: 'completed', mp_payment_id: payment_id }
     });
 
     // Obtener las fotos desbloqueadas en esta transacción
     const unlocked = await prisma.unlockedPhoto.findMany({
-      where: { transaction_id: dbTransactionId },
+      where: { transaction_id: parseInt(transaction_id) },
       include: { photo: true }
     });
 
@@ -187,45 +165,39 @@ export const verifyPayment = async (req: Request, res: Response) => {
   }
 };
 
-export const openpayWebhook = async (req: Request, res: Response) => {
+export const mpWebhook = async (req: Request, res: Response) => {
   try {
-    const { type, transaction } = req.body;
+    const { type, data } = req.body;
     
-    // OpenPay envia type='charge.succeeded' y data en 'transaction'
-    if (type === 'charge.succeeded' && transaction && transaction.id) {
-      const opChargeId = transaction.id;
-      
-      const parts = transaction.order_id?.split('-');
-      const orderType = parts ? parts[0] : null; // GAL or STORE
-      const dbId = parts && parts.length > 1 ? parseInt(parts[1]) : null;
+    // MercadoPago envia type='payment' y data.id
+    if (type === 'payment' && data && data.id) {
+      const paymentClient = new Payment(mpClient);
+      const payment = await paymentClient.get({ id: data.id });
+
+      if (payment.status === 'approved') {
+        const transaction_id = payment.external_reference || payment.metadata?.transaction_id;
         
-      if (dbId) {
-        if (orderType === 'GAL') {
-          const dbTx = await prisma.transaction.findUnique({ where: { id: dbId } });
-          if (dbTx && dbTx.status === 'pending') {
+        if (transaction_id) {
+          const transaction = await prisma.transaction.findUnique({
+            where: { id: parseInt(transaction_id) }
+          });
+
+          // Solo actualizamos si sigue pendiente
+          if (transaction && transaction.status === 'pending') {
             await prisma.transaction.update({
-              where: { id: dbId },
-              data: { status: 'completed', payment_id: opChargeId }
+              where: { id: parseInt(transaction_id) },
+              data: { status: 'completed', mp_payment_id: payment.id?.toString() }
             });
-            console.log(`[Webhook] Transacción OpenPay GAL-${dbId} completada.`);
-          }
-        } else if (orderType === 'STORE') {
-          const dbOrder = await prisma.storeOrder.findUnique({ where: { id: dbId } });
-          if (dbOrder && dbOrder.status === 'PENDING') {
-            await prisma.storeOrder.update({
-              where: { id: dbId },
-              data: { status: 'PAID', payment_id: opChargeId }
-            });
-            console.log(`[Webhook] Transacción OpenPay STORE-${dbId} completada.`);
+            console.log(`[Webhook] Transacción ${transaction_id} completada.`);
           }
         }
       }
     }
 
-    // Siempre responder 200 a OpenPay para que no siga insistiendo
+    // Siempre responder 200 a MercadoPago para que no siga insistiendo
     res.status(200).send('OK');
   } catch (error) {
-    console.error('Error procesando webhook openpay:', error);
+    console.error('Error procesando webhook:', error);
     res.status(500).send('Error');
   }
 };

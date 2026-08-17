@@ -127,7 +127,7 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
 
       if (res.ok) {
         const data = await res.json();
-        toast.success('Redirigiendo a OpenPay...', { id: toastId });
+        toast.success('Redirigiendo a Mercado Pago...', { id: toastId });
         window.location.href = data.init_point;
       } else {
         toast.error('Error al iniciar el pago', { id: toastId });
@@ -139,32 +139,30 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
     }
   };
 
-  const handleDownloadAll = async () => {
+  const handleDownloadZip = async () => {
     setIsProcessing(true);
-    const toastId = toast.loading('Preparando descargas...');
+    const toastId = toast.loading('Generando tu archivo ZIP... Esto puede tomar unos minutos.');
     try {
       const token = localStorage.getItem('client_token');
-      const res = await fetch(`${API_URL}/api/downloads/${galleryId}/all-urls`, {
+      const res = await fetch(`${API_URL}/api/downloads/${galleryId}/zip`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
       if (res.ok) {
-        const data = await res.json();
-        toast.success(`Iniciando la descarga de ${data.urls.length} fotos...`, { id: toastId });
-        
-        for (const item of data.urls) {
-          const a = document.createElement('a');
-          a.href = item.url;
-          a.download = item.fileName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          // Pausa entre descargas para que el navegador no bloquee
-          await new Promise(resolve => setTimeout(resolve, 800));
-        }
+        toast.success('¡ZIP generado! Descargando...', { id: toastId });
+        // Trigger download directly from the backend stream response
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Entrega_Final.zip`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
       } else {
-        toast.error('Error al generar las descargas', { id: toastId });
+        toast.error('Error al generar el ZIP', { id: toastId });
       }
     } catch (e) {
       toast.error('Error de conexión', { id: toastId });
@@ -266,11 +264,11 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
             </div>
             <div className="w-full md:w-auto">
               <button
-                onClick={handleDownloadAll}
+                onClick={handleDownloadZip}
                 disabled={isProcessing}
                 className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-8 py-3 rounded-xl font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isProcessing ? 'Procesando...' : '⬇️ Descargar Todas las Fotos'}
+                {isProcessing ? 'Generando ZIP...' : '📦 Descargar Galería en ZIP'}
               </button>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../prismaClient';
 import { generateSecureDownloadUrl, getFileStream } from '../services/storage';
+const archiver = require('archiver');
 
 export const downloadFreePhotos = async (req: Request, res: Response) => {
   try {
@@ -99,7 +100,7 @@ export const downloadFreePhotos = async (req: Request, res: Response) => {
   }
 };
 
-export const getDeliveryUrls = async (req: Request, res: Response) => {
+export const downloadGalleryZip = async (req: Request, res: Response) => {
   try {
     const gallery_id = parseInt(req.params.gallery_id as string);
     const client_id = (req as any).user?.id;
@@ -127,23 +128,50 @@ export const getDeliveryUrls = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'No hay fotos finales disponibles' });
     }
 
-    // Ordenar naturalmente
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="Entrega_Final_${gallery.name.replace(/\s+/g, '_')}.zip"`);
+
+    const archive = archiver('zip', {
+      zlib: { level: 9 } // Nivel máximo de compresión
+    });
+
+    archive.on('error', (err: any) => {
+      console.error('Error generando ZIP:', err);
+      if (!res.headersSent) {
+        res.status(500).send({ error: 'Error generando ZIP' });
+      }
+    });
+
+    // Enviar el stream del ZIP directamente a la respuesta
+    archive.pipe(res);
+
+    // Ordenar naturalmente antes de empaquetar
     gallery.photos.sort((a, b) => {
       const nameA = (a.high_res_key.split('/').pop() || '').replace(/^\d+-/, '');
       const nameB = (b.high_res_key.split('/').pop() || '').replace(/^\d+-/, '');
       return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
     });
 
-    const downloadUrls = [];
+    // Iterar sobre las fotos y añadirlas al ZIP
     for (const photo of gallery.photos) {
-      const secureUrl = await generateSecureDownloadUrl(photo.high_res_key, true);
-      const fileName = photo.high_res_key.split('-').slice(1).join('-') || `foto_${photo.id}.jpg`;
-      downloadUrls.push({ photoId: photo.id, url: secureUrl, fileName });
+      try {
+        const stream = await getFileStream(photo.high_res_key);
+        // Extraer el nombre original o usar un nombre por defecto
+        const fileName = photo.high_res_key.split('-').slice(1).join('-') || `foto_${photo.id}.jpg`;
+        
+        archive.append(stream, { name: fileName });
+      } catch (err) {
+        console.error(`Error añadiendo archivo ${photo.high_res_key} al ZIP:`, err);
+        // Opcional: ignorar error para una foto y continuar con las demás
+      }
     }
 
-    res.status(200).json({ urls: downloadUrls });
+    await archive.finalize();
+
   } catch (error) {
-    console.error('Error en getDeliveryUrls:', error);
-    res.status(500).json({ error: 'Error procesando la solicitud de descarga masiva' });
+    console.error('Error en downloadGalleryZip:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Error procesando la solicitud de ZIP' });
+    }
   }
 };
