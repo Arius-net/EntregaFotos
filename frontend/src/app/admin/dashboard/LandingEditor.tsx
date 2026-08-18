@@ -20,6 +20,8 @@ interface LandingSettings {
   about_image: string;
   about_image_url?: string;
 
+  portfolio_title: string;
+  portfolio_description: string;
   portfolio_images: string[];
   portfolio_images_urls?: string[];
 
@@ -356,8 +358,29 @@ export default function LandingEditor() {
         <div className="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
           <h3 className="text-xl font-semibold text-white">Portafolio Profesional</h3>
           <button type="button" onClick={() => triggerUpload('portfolio')} className="text-xs bg-gray-800 hover:bg-gray-700 px-3 py-1 rounded text-white border border-gray-600">
-            Añadir Trabajos
+            Añadir Fotos
           </button>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label className="text-sm text-gray-400 block mb-1">Título del Portafolio</label>
+            <input 
+              type="text" 
+              value={settings.portfolio_title || ''}
+              onChange={e => setSettings({...settings, portfolio_title: e.target.value})}
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white"
+            />
+          </div>
+          <div>
+            <label className="text-sm text-gray-400 block mb-1">Descripción del Portafolio</label>
+            <input 
+              type="text" 
+              value={settings.portfolio_description || ''}
+              onChange={e => setSettings({...settings, portfolio_description: e.target.value})}
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white"
+            />
+          </div>
         </div>
         
         <div className="columns-2 md:columns-4 lg:columns-5 gap-4 space-y-4">

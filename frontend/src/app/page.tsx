@@ -158,9 +158,9 @@ export default function LandingPage() {
       <section id="portfolio" className="py-24 bg-[#05060d] relative scroll-mt-20 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h3 className="text-4xl md:text-5xl font-bold mb-6">Mis Mejores Trabajos</h3>
+            <h3 className="text-4xl md:text-5xl font-bold mb-6">{settings?.portfolio_title || 'Mis Mejores Trabajos'}</h3>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Una selección de mis capturas favoritas. Cada imagen es un testimonio de la dedicación y el amor por el arte fotográfico.
+              {settings?.portfolio_description || 'Una selección de mis capturas favoritas. Cada imagen es un testimonio de la dedicación y el amor por el arte fotográfico.'}
             </p>
           </div>
           
@@ -168,9 +168,6 @@ export default function LandingPage() {
             {currentPortfolioImages.map((img: string, idx: number) => (
               <div key={idx} className="relative group overflow-hidden rounded-2xl break-inside-avoid shadow-lg border border-white/10">
                 <img src={img} alt={`Portafolio ${idx + 1}`} className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#171c54]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
-                  <span className="text-white font-medium text-lg">Sesión Profesional</span>
-                </div>
               </div>
             ))}
           </div>

@@ -125,6 +125,8 @@ model LandingSettings {
   
   // Portafolio (Manual)
   portfolio_images    String[]
+  portfolio_title     String   @default("Mis Mejores Trabajos")
+  portfolio_description String @default("Una selección de mis capturas favoritas. Cada imagen es un testimonio de la dedicación y el amor por el arte fotográfico.")
   
   // Identidad de Marca
   brand_name          String   @default("Quevedo Contigo")
