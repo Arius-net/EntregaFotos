@@ -181,30 +181,48 @@ export const clipWebhook = async (req: Request, res: Response) => {
     const payload = req.body;
     console.log('[Clip Webhook Received]', JSON.stringify(payload));
 
-    const status = payload.status || payload.payment?.status;
-    const isApproved = status === 'APPROVED' || status === 'COMPLETED' || payload.type?.includes('APPROVED');
+    const status = payload.status || payload.payment?.status || payload.event_type;
+    const isApproved = status === 'APPROVED' || status === 'COMPLETED' || status === 'PAID' || status === 'REQUEST_COMPLETED' || payload.type?.includes('APPROVED');
 
     if (isApproved) {
-      const transactionId = payload.metadata?.transaction_id || payload.custom_reference || payload.payment?.custom_reference;
-      const orderId = payload.metadata?.order_id || payload.custom_reference; // Podría venir en cualquiera de los dos dependiendo de Clip
+      let transactionIdParsed: number | null = null;
+      let orderIdParsed: number | null = null;
 
-      // Verificar si es de galería
-      if (transactionId) {
-        const txn = await prisma.transaction.findUnique({ where: { id: parseInt(transactionId) } });
+      // 1. Intentar por metadata (si Clip lo incluye)
+      const metaTxnId = payload.metadata?.transaction_id || payload.custom_reference || payload.payment?.custom_reference;
+      const metaOrderId = payload.metadata?.order_id;
+
+      if (metaTxnId) transactionIdParsed = parseInt(metaTxnId);
+      if (metaOrderId) orderIdParsed = parseInt(metaOrderId);
+
+      // 2. Intentar buscar en la BD por el UUID de Clip si metadata falla
+      const clipPaymentId = payload.transaction_id || payload.payment_detail?.order_id || payload.id;
+      
+      if (clipPaymentId) {
+        if (!orderIdParsed) {
+          const storeOrder = await prisma.storeOrder.findFirst({ where: { payment_id: clipPaymentId } });
+          if (storeOrder) orderIdParsed = storeOrder.id;
+        }
+        if (!transactionIdParsed) {
+          const galleryTxn = await prisma.transaction.findFirst({ where: { mp_preference_id: clipPaymentId } });
+          if (galleryTxn) transactionIdParsed = galleryTxn.id;
+        }
+      }
+
+      // Procesar si encontramos ID de Galería
+      if (transactionIdParsed) {
+        const txn = await prisma.transaction.findUnique({ where: { id: transactionIdParsed } });
         if (txn && txn.status === 'pending') {
           await prisma.transaction.update({
-            where: { id: parseInt(transactionId) },
+            where: { id: transactionIdParsed },
             data: { status: 'completed' }
           });
-          console.log(`[Webhook] Transacción de Galería ${transactionId} completada.`);
+          console.log(`[Webhook] Transacción de Galería ${transactionIdParsed} completada.`);
         }
       }
       
-      // Verificar si es de tienda (si pasamos order_id en metadata o custom_reference)
-      if (orderId && !transactionId) { 
-        // Nota: Solo hacemos esto si no encontramos transactionId para no confundir IDs si coinciden, 
-        // aunque order_id debería estar explícito en metadata.
-        const orderIdParsed = parseInt(payload.metadata?.order_id || orderId);
+      // Procesar si encontramos ID de Tienda
+      if (orderIdParsed && !transactionIdParsed) { 
         const order = await prisma.storeOrder.findUnique({ where: { id: orderIdParsed } });
         if (order && order.status === 'PENDING') {
           await prisma.storeOrder.update({
