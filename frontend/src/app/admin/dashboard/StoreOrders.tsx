@@ -15,7 +15,7 @@ export default function StoreOrders() {
 
   const loadOrders = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/admin/store/orders`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });

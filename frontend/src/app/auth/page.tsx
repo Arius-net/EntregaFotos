@@ -31,7 +31,7 @@ export default function AdminAuthPage() {
       if (res.ok) {
         toast.success('¡Bienvenido!', { id: loadingToast });
         // Guardar JWT
-        localStorage.setItem('token', data.token);
+        sessionStorage.setItem('token', data.token);
         router.push('/admin/dashboard');
       } else {
         toast.error(data.error || 'Ocurrió un error', { id: loadingToast });

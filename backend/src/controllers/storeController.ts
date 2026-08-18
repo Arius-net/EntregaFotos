@@ -156,8 +156,17 @@ export const getMyStoreOrders = async (req: Request, res: Response) => {
     const client_id = (req as any).user?.id;
     if (!client_id) return res.status(401).json({ error: 'No autorizado' });
 
+    const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+
     const orders = await prisma.storeOrder.findMany({
-      where: { client_id },
+      where: { 
+        client_id,
+        NOT: {
+          status: { in: ['PENDING', 'CANCELLED'] },
+          created_at: { lt: fortyEightHoursAgo },
+          payment_method: 'CLIP'
+        }
+      },
       orderBy: { created_at: 'desc' },
       include: {
         items: {

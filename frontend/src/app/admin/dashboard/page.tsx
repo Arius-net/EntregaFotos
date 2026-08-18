@@ -59,7 +59,7 @@ export default function AdminDashboard() {
   const PHOTOGRAPHER_ID = 1; // Fotógrafo simulado
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (!token) {
       router.push('/auth');
       return;
@@ -69,7 +69,7 @@ export default function AdminDashboard() {
 
   const fetchGalleries = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       // Obtenemos los fotógrafos/galerias
       // El backend ahora espera que el jwt valide y devuelve las de ese user
       // No necesitamos pasar el ID manual en la URL si hacemos un endpoint 'me' o usamos el token.
@@ -96,7 +96,7 @@ export default function AdminDashboard() {
     setIsCreating(true);
     
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const method = editingId ? 'PUT' : 'POST';
       const url = editingId ? `${API_URL}/api/galleries/${editingId}` : `${API_URL}/api/galleries`;
 
@@ -154,7 +154,7 @@ export default function AdminDashboard() {
     setViewingSelectionFor(gallery);
     setIsLoadingSelections(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/admin/galleries/${gallery.id}/selections`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -174,7 +174,7 @@ export default function AdminDashboard() {
     
     const loadingToast = toast.loading('Eliminando galería...');
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/galleries/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
@@ -198,7 +198,7 @@ export default function AdminDashboard() {
     const toastId = toast.loading(`Subiendo ${files.length} fotos a Cloudflare R2...`);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const batchSize = 20; // Subir de 20 en 20 para evitar problemas de memoria en el servidor
       
       for (let i = 0; i < files.length; i += batchSize) {

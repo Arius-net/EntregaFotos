@@ -37,7 +37,7 @@ export default function StoreEditor() {
 
   const fetchItems = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       // En el backend, si mandamos token y es admin, debería devolver todo (incluido inactivos)
       const res = await fetch(`${API_URL}/api/store`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -73,7 +73,7 @@ export default function StoreEditor() {
     const toastId = toast.loading('Subiendo foto a la tienda...');
 
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const formData = new FormData();
       formData.append('photo', selectedFile);
       formData.append('title', title);
@@ -106,7 +106,7 @@ export default function StoreEditor() {
 
   const toggleActive = async (id: number, currentStatus: boolean) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/store/${id}`, {
         method: 'PUT',
         headers: {
@@ -128,7 +128,7 @@ export default function StoreEditor() {
     if (!confirm('¿Estás seguro de eliminar esta foto de la tienda permanentemente?')) return;
     
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/store/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
@@ -152,7 +152,7 @@ export default function StoreEditor() {
   const saveEdit = async () => {
     if (!editingItem) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/store/${editingItem.id}`, {
         method: 'PUT',
         headers: {

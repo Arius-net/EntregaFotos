@@ -70,7 +70,7 @@ export default function LandingEditor() {
 
     setIsSaving(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       // Limpiamos las urls firmadas antes de guardar para no mandar basura a la bd
       const dataToSave = { ...settings };
       delete dataToSave.hero_images_urls;
@@ -122,7 +122,7 @@ export default function LandingEditor() {
     const toastId = toast.loading(`Subiendo ${files.length} foto(s)...`);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const uploadedKeys: string[] = [];
 
       // Subimos archivo por archivo

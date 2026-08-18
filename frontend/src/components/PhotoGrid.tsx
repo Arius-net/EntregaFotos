@@ -34,6 +34,15 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
   const folders = Array.from(new Set(photos.map(p => p.folder || 'General'))).sort((a, b) => a.localeCompare(b));
   const [activeFolder, setActiveFolder] = useState<string>(folders[0] || 'General');
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
+
+  // Reseteamos a página 1 si cambian de carpeta
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFolder]);
+
   const fetchUnlockedPhotos = async () => {
     try {
       const token = localStorage.getItem('client_token');
@@ -56,6 +65,15 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
   }, [galleryId, clientEmail]);
 
   const filteredPhotos = photos.filter(p => (p.folder || 'General') === activeFolder);
+  
+  // Paginación
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentPhotos = filteredPhotos.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredPhotos.length / itemsPerPage);
+
+  const nextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  const prevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
 
   // Keyboard navigation for Lightbox
   useEffect(() => {
@@ -231,8 +249,8 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
         </div>
       )}
 
-      <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4 pb-32">
-        {filteredPhotos.map((photo, index) => {
+      <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4 pb-12">
+        {currentPhotos.map((photo, index) => {
           const isSelected = selectedIds.has(photo.id);
           const isUnlocked = unlockedIds.has(photo.id);
 
@@ -297,6 +315,29 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
           );
         })}
       </div>
+
+      {/* Controles de Paginación */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-4 mt-8 mb-32">
+          <button 
+            onClick={prevPage} 
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-white/10 rounded-xl text-white disabled:opacity-50 hover:bg-white/20 transition-colors border border-white/5 shadow-lg backdrop-blur-md font-medium"
+          >
+            ← Anterior
+          </button>
+          <span className="text-gray-300 font-medium text-sm bg-black/40 px-4 py-2 rounded-xl backdrop-blur-md border border-white/5">
+            Página {currentPage} de {totalPages}
+          </span>
+          <button 
+            onClick={nextPage} 
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-white/10 rounded-xl text-white disabled:opacity-50 hover:bg-white/20 transition-colors border border-white/5 shadow-lg backdrop-blur-md font-medium"
+          >
+            Siguiente →
+          </button>
+        </div>
+      )}
 
       {/* Floating Action Bar (Bottom) */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-50 transition-all duration-500 transform">
@@ -410,14 +451,14 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
 
             <div className="relative max-w-[90vw] max-h-[85vh] transition-transform duration-300">
               <img 
-                src={filteredPhotos[lightboxIndex].thumbnail_url} 
+                src={currentPhotos[lightboxIndex].thumbnail_url} 
                 className={`max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl transition-all duration-300 ${
-                  selectedIds.has(filteredPhotos[lightboxIndex].id) ? 'ring-4 ring-blue-500 scale-[0.98]' : ''
+                  selectedIds.has(currentPhotos[lightboxIndex].id) ? 'ring-4 ring-blue-500 scale-[0.98]' : ''
                 }`}
                 draggable={false}
               />
               
-              {!unlockedIds.has(filteredPhotos[lightboxIndex].id) && (
+              {!unlockedIds.has(currentPhotos[lightboxIndex].id) && (
                 <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md rounded-full p-2 shadow-lg border border-white/20">
                   <span className="text-white text-xs">🔒 Bloqueada</span>
                 </div>
@@ -435,14 +476,14 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
           {/* Footer Lightbox (Botón Selección) */}
           <div className="absolute bottom-0 left-0 w-full p-6 pb-10 bg-gradient-to-t from-black/90 to-transparent flex justify-center z-10">
             <button
-              onClick={() => toggleSelection(filteredPhotos[lightboxIndex].id)}
+              onClick={() => toggleSelection(currentPhotos[lightboxIndex].id)}
               className={`px-8 py-4 rounded-2xl font-bold text-lg shadow-xl transition-all flex items-center gap-3 ${
-                selectedIds.has(filteredPhotos[lightboxIndex].id)
+                selectedIds.has(currentPhotos[lightboxIndex].id)
                   ? 'bg-gray-800 text-white hover:bg-gray-700 border border-gray-600'
                   : 'bg-blue-600 text-white hover:bg-blue-500 hover:scale-105'
               }`}
             >
-              {selectedIds.has(filteredPhotos[lightboxIndex].id) ? (
+              {selectedIds.has(currentPhotos[lightboxIndex].id) ? (
                 <>
                   <X size={24} /> Quitar de la selección
                 </>

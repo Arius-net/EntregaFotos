@@ -23,6 +23,10 @@ export default function StorePage() {
   const [items, setItems] = useState<StoreItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
+  
   // Shopping Cart & Modals State
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -241,6 +245,15 @@ export default function StorePage() {
     }
   };
 
+  // Paginación
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = items.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(items.length / itemsPerPage);
+
+  const nextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  const prevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
+
   return (
     <div className="min-h-screen bg-[#05060d] text-white font-sans selection:bg-[#282e70] selection:text-white pb-20">
       
@@ -301,34 +314,58 @@ export default function StorePage() {
             Aún no hay fotos en la tienda. Vuelve pronto.
           </div>
         ) : (
-          <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
-            {items.map(item => (
-              <div 
-                key={item.id} 
-                className="relative group break-inside-avoid rounded-2xl overflow-hidden cursor-pointer"
-                onClick={() => setSelectedImage(item)}
-              >
-                <img 
-                  src={item.thumbnail_url} 
-                  alt={item.title} 
-                  className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700 bg-gray-900" 
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-                  <h3 className="font-semibold text-lg text-white truncate">{item.title}</h3>
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="text-amber-400 font-bold">${item.price}</span>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); addToCart(item); }}
-                      className="bg-white text-black px-3 py-1 rounded-full text-xs font-bold hover:scale-105 transition-transform"
-                    >
-                      Añadir
-                    </button>
+          <>
+            <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
+              {currentItems.map(item => (
+                <div 
+                  key={item.id} 
+                  className="relative group break-inside-avoid rounded-2xl overflow-hidden cursor-pointer"
+                  onClick={() => setSelectedImage(item)}
+                >
+                  <img 
+                    src={item.thumbnail_url} 
+                    alt={item.title} 
+                    className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700 bg-gray-900" 
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                    <h3 className="font-semibold text-lg text-white truncate">{item.title}</h3>
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-amber-400 font-bold">${item.price}</span>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); addToCart(item); }}
+                        className="bg-white text-black px-3 py-1 rounded-full text-xs font-bold hover:scale-105 transition-transform"
+                      >
+                        Añadir
+                      </button>
+                    </div>
                   </div>
                 </div>
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-4 mt-12">
+                <button 
+                  onClick={prevPage} 
+                  disabled={currentPage === 1}
+                  className="p-2 bg-gray-800 rounded-full text-white disabled:opacity-50 hover:bg-gray-700 transition-colors"
+                >
+                  <ArrowLeft size={20} />
+                </button>
+                <span className="text-gray-400 font-medium text-sm">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <button 
+                  onClick={nextPage} 
+                  disabled={currentPage === totalPages}
+                  className="p-2 bg-gray-800 rounded-full text-white disabled:opacity-50 hover:bg-gray-700 transition-colors rotate-180"
+                >
+                  <ArrowLeft size={20} />
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </main>
 
