@@ -200,12 +200,20 @@ export const clipWebhook = async (req: Request, res: Response) => {
       
       if (clipPaymentId) {
         if (!orderIdParsed) {
-          const storeOrder = await prisma.storeOrder.findFirst({ where: { payment_id: clipPaymentId } });
-          if (storeOrder) orderIdParsed = storeOrder.id;
+          try {
+            const storeOrder = await prisma.storeOrder.findFirst({ where: { payment_id: clipPaymentId } });
+            if (storeOrder) orderIdParsed = storeOrder.id;
+          } catch (e) {
+            console.warn('Advertencia: No se pudo buscar storeOrder por payment_id', e);
+          }
         }
         if (!transactionIdParsed) {
-          const galleryTxn = await prisma.transaction.findFirst({ where: { mp_preference_id: clipPaymentId } });
-          if (galleryTxn) transactionIdParsed = galleryTxn.id;
+          try {
+            const galleryTxn = await prisma.transaction.findFirst({ where: { mp_preference_id: clipPaymentId } });
+            if (galleryTxn) transactionIdParsed = galleryTxn.id;
+          } catch (e) {
+            console.warn('Advertencia: No se pudo buscar transaction por mp_preference_id. ¿Falta la columna en la BD?', e);
+          }
         }
       }
 
