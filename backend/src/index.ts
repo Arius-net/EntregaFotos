@@ -11,7 +11,7 @@ import { downloadFreePhotos, downloadAllFinalPhotos } from './controllers/downlo
 import { createPreference, verifyPayment, clipWebhook } from './controllers/paymentController';
 import { login, register, requestClientPin, verifyClientPin } from './controllers/authController';
 import { getSettings, updateSettings, uploadLandingPhoto } from './controllers/settingsController';
-import { createStoreItem, getStoreItems, updateStoreItem, deleteStoreItem, createStoreOrder, getMyStoreOrders, getAllStoreOrders } from './controllers/storeController';
+import { createStoreItem, getStoreItems, updateStoreItem, deleteStoreItem, createOrder, getMyStoreOrders, getAllStoreOrders, downloadStoreItem } from './controllers/storeController';
 import { authenticateJWT } from './middlewares/authMiddleware';
 
 // Inicializar tarea cron
@@ -78,13 +78,14 @@ app.put('/api/store/:id', authenticateJWT, updateStoreItem);
 app.delete('/api/store/:id', authenticateJWT, deleteStoreItem);
 
 // Rutas de Órdenes de Tienda
-app.post('/api/store/orders', authenticateJWT, createStoreOrder);
+app.post('/api/store/orders', authenticateJWT, createOrder);
 app.get('/api/store/orders/me', authenticateJWT, getMyStoreOrders);
 app.get('/api/admin/store/orders', authenticateJWT, getAllStoreOrders);
 
 // Rutas de Descarga
 app.post('/api/downloads/free', authenticateJWT, downloadFreePhotos);
 app.get('/api/downloads/:gallery_id/all', authenticateJWT, downloadAllFinalPhotos);
+app.get('/api/store/download/:orderId/:itemId', authenticateJWT, downloadStoreItem);
 
 // Rutas de Pagos (Mercado Pago)
 app.post('/api/payments/create', authenticateJWT, createPreference);

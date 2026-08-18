@@ -283,3 +283,49 @@ export const getAllStoreOrders = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Error interno' });
   }
 };
+
+export const downloadStoreItem = async (req: Request, res: Response) => {
+  try {
+    const orderId = req.params.orderId as string;
+    const itemId = req.params.itemId as string;
+    const client_id = (req as any).user?.id;
+
+    if (!client_id) return res.status(401).json({ error: 'No autorizado' });
+
+    // Verificar que la orden exista, sea de este cliente, y esté pagada
+    const order = await prisma.storeOrder.findFirst({
+      where: {
+        id: parseInt(orderId),
+        client_id: client_id,
+        status: 'PAID'
+      }
+    });
+
+    if (!order) {
+      return res.status(403).json({ error: 'Orden no encontrada o no pagada' });
+    }
+
+    // Verificar que el item exista en esta orden
+    const orderItem = await prisma.storeOrderItem.findFirst({
+      where: {
+        order_id: order.id,
+        store_item_id: parseInt(itemId)
+      },
+      include: {
+        store_item: true
+      }
+    });
+
+    if (!orderItem) {
+      return res.status(404).json({ error: 'Item no encontrado en esta orden' });
+    }
+
+    // Generar URL de descarga para el archivo en alta resolución
+    const secureUrl = await generateSecureDownloadUrl(orderItem.store_item.high_res_key, true);
+
+    res.status(200).json({ url: secureUrl });
+  } catch (error) {
+    console.error('Error in downloadStoreItem:', error);
+    res.status(500).json({ error: 'Error al procesar la descarga' });
+  }
+};

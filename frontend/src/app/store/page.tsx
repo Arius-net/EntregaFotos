@@ -214,6 +214,33 @@ export default function StorePage() {
     }
   };
 
+  const handleDownload = async (orderId: number, itemId: number) => {
+    const toastId = toast.loading('Generando enlace de descarga...');
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/store/download/${orderId}/${itemId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        toast.success('¡Descarga iniciada!', { id: toastId });
+        // Simular click en enlace para forzar descarga
+        const link = document.createElement('a');
+        link.href = data.url;
+        link.download = `foto_${itemId}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        const err = await res.json();
+        toast.error(err.error || 'Error al descargar', { id: toastId });
+      }
+    } catch (e) {
+      toast.error('Error de conexión', { id: toastId });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#05060d] text-white font-sans selection:bg-[#282e70] selection:text-white pb-20">
       
@@ -402,9 +429,9 @@ export default function StorePage() {
                 </div>
                 <button 
                   onClick={handleCheckout}
-                  className="w-full bg-[#25D366] text-black font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(37,211,102,0.2)] hover:bg-[#20b858] transition-colors"
+                  className="w-full bg-[#ff6600] text-white font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(255,102,0,0.2)] hover:bg-[#e65c00] transition-colors"
                 >
-                  Enviar Pedido (WhatsApp)
+                  Pagar
                 </button>
               </div>
             )}
@@ -493,6 +520,14 @@ export default function StorePage() {
                             <p className="text-sm font-semibold">{item.store_item.title}</p>
                             <p className="text-xs text-gray-400">Cant: {item.quantity} x ${item.price_at_time}</p>
                           </div>
+                          {order.status === 'PAID' && (
+                            <button
+                              onClick={() => handleDownload(order.id, item.store_item_id)}
+                              className="ml-auto px-4 py-2 bg-[#8892f0]/20 text-[#8892f0] rounded-lg hover:bg-[#8892f0]/40 transition-colors font-medium text-sm flex items-center gap-2"
+                            >
+                              Descargar
+                            </button>
+                          )}
                         </li>
                       ))}
                     </ul>
