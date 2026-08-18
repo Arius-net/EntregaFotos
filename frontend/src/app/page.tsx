@@ -12,6 +12,7 @@ export default function LandingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [settings, setSettings] = useState<any>(null);
+  const [accessCode, setAccessCode] = useState('');
   const router = useRouter();
 
   useEffect(() => {
@@ -31,8 +32,24 @@ export default function LandingPage() {
     return () => clearInterval(timer);
   }, [currentHeroImages.length]);
 
-  // Se eliminó handleAccess porque ahora vive en /portal
+  const handleAccess = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!accessCode.trim()) return;
 
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/galleries/${accessCode.toUpperCase()}`);
+      if (res.ok) {
+        router.push(`/gallery/${accessCode.toUpperCase()}`);
+      } else {
+        toast.error('Código de galería incorrecto o expirado.');
+        setIsLoading(false);
+      }
+    } catch (e) {
+      toast.error('Error de conexión');
+      setIsLoading(false);
+    }
+  };
   const nextSlide = () => setCurrentSlide((p) => (p + 1) % currentHeroImages.length);
   const prevSlide = () => setCurrentSlide((p) => (p - 1 + currentHeroImages.length) % currentHeroImages.length);
 
@@ -177,8 +194,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CLIENT PORTAL CTA */}
-      <section className="py-24 relative overflow-hidden bg-[#0d1024]">
+      {/* CLIENT PORTAL SECTION */}
+      <section id="portal" className="py-24 relative overflow-hidden bg-[#0d1024] scroll-mt-20 border-t border-white/5">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#171c54] rounded-full filter blur-[120px] opacity-40"></div>
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#282e70] rounded-full filter blur-[120px] opacity-30"></div>
 
@@ -189,12 +206,41 @@ export default function LandingPage() {
           </div>
           <h3 className="text-4xl md:text-5xl font-bold mb-6">Tus recuerdos, listos.</h3>
           <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
-            Si ya tuvimos una sesión, accede a tu portal privado para seleccionar tus fotos favoritas o descargar tu galería final.
+            Ingresa el código único que te he proporcionado para acceder a tu galería privada, seleccionar tus fotos favoritas y descargarlas en alta resolución.
           </p>
 
-          <button onClick={() => router.push('/portal')} className="bg-gradient-to-r from-[#171c54] to-[#282e70] hover:from-[#282e70] hover:to-[#38419c] text-white font-bold text-lg py-5 px-10 rounded-xl shadow-[0_0_30px_rgba(40,46,112,0.4)] transition-all active:scale-95 flex items-center justify-center gap-3 mx-auto group">
-            Entrar al Portal de Clientes <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />
-          </button>
+          <div className="bg-[#171c54]/40 backdrop-blur-xl border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden max-w-lg mx-auto">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#282e70] to-[#8892f0]"></div>
+            
+            <form onSubmit={handleAccess} className="space-y-6">
+              <div>
+                <label className="text-sm text-gray-300 font-medium block mb-3 text-left">Código de Galería</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Lock size={20} className="text-gray-500" />
+                  </div>
+                  <input 
+                    type="text" 
+                    placeholder="Ej: BODA-2026"
+                    className="w-full bg-[#0a0c1a] border border-[#282e70] rounded-xl pl-12 pr-4 py-4 text-xl tracking-widest font-mono text-white focus:outline-none focus:border-[#8892f0] focus:ring-1 focus:ring-[#8892f0] transition-all uppercase placeholder:text-gray-600"
+                    value={accessCode}
+                    onChange={(e) => setAccessCode(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-[#171c54] to-[#282e70] hover:from-[#282e70] hover:to-[#38419c] disabled:opacity-50 border border-white/10 text-white font-semibold py-4 rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 group"
+              >
+                {isLoading ? 'Verificando...' : (
+                  <>Acceder a mi Galería <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" /></>
+                )}
+              </button>
+            </form>
+          </div>
         </div>
       </section>
 
