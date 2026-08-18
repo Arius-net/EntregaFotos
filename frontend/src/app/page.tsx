@@ -261,12 +261,13 @@ export default function LandingPage() {
                 Explorar Colección <ArrowRight size={20} />
               </button>
             </div>
-            <div className="lg:w-1/2 w-full h-full min-h-[400px] relative bg-gradient-to-tr from-[#0a0c1a] to-[#171c54]">
-               {/* Decorative elements for store CTA */}
-               <div className="absolute inset-0 flex items-center justify-center">
-                 <Store size={100} className="text-white/10" />
-               </div>
-               <div className="absolute inset-0 bg-gradient-to-t from-[#0a0c1a] lg:from-transparent via-transparent to-transparent"></div>
+            <div className="lg:w-1/2 w-full h-full min-h-[400px] relative bg-[#0a0c1a]">
+               <img 
+                 src="/wallpapers_store_1786601317099.png" 
+                 alt="Tienda Móvil" 
+                 className="absolute inset-0 w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity duration-500" 
+               />
+               <div className="absolute inset-0 bg-gradient-to-t from-[#0a0c1a] via-[#0a0c1a]/20 lg:bg-gradient-to-l lg:from-transparent lg:via-transparent lg:to-[#0a0c1a]/80 to-transparent"></div>
             </div>
           </div>
         </div>
