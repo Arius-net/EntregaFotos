@@ -97,7 +97,7 @@ export const createPreference = async (req: Request, res: Response) => {
     // Actualizar transacción con el ID de Clip
     await prisma.transaction.update({
       where: { id: transaction.id },
-      data: { mp_preference_id: clipData.payment_request_id } // Reusamos la columna para evitar cambiar schema
+      data: { clip_payment_request_id: clipData.payment_request_id }
     });
 
     // 3. Guardar las fotos como pendientes
@@ -209,10 +209,10 @@ export const clipWebhook = async (req: Request, res: Response) => {
         }
         if (!transactionIdParsed) {
           try {
-            const galleryTxn = await prisma.transaction.findFirst({ where: { mp_preference_id: clipPaymentId } });
+            const galleryTxn = await prisma.transaction.findFirst({ where: { clip_payment_request_id: clipPaymentId } });
             if (galleryTxn) transactionIdParsed = galleryTxn.id;
           } catch (e) {
-            console.warn('Advertencia: No se pudo buscar transaction por mp_preference_id. ¿Falta la columna en la BD?', e);
+            console.warn('Advertencia: No se pudo buscar transaction por clip_payment_request_id. ¿Falta la columna en la BD?', e);
           }
         }
       }

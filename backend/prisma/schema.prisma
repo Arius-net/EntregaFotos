@@ -88,8 +88,8 @@ model Transaction {
   client           Client          @relation(fields: [client_id], references: [id], onDelete: Cascade)
   gallery_id       Int
   gallery          Gallery         @relation(fields: [gallery_id], references: [id], onDelete: Cascade)
-  mp_preference_id String?
-  mp_payment_id    String?
+  clip_payment_request_id String?
+  clip_transaction_id     String?
   status           String          // e.g. "pending", "completed"
   total_amount     Decimal
   unlocked_photos  UnlockedPhoto[]
