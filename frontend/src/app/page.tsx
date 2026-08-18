@@ -76,8 +76,14 @@ export default function LandingPage() {
             key={idx}
             className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${idx === currentSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}
           >
-            <div className="absolute inset-0 bg-gradient-to-b from-[#171c54]/60 via-[#171c54]/40 to-[#0a0c1a] z-10" />
-            <img src={img} alt="Hero" className="w-full h-full object-cover" />
+            {/* Fondo desenfocado para llenar los espacios vacíos */}
+            <img src={img} alt="" className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-110" />
+            
+            {/* Gradiente oscuro para asegurar legibilidad del texto */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#171c54]/80 via-[#171c54]/50 to-[#0a0c1a] z-10 pointer-events-none" />
+            
+            {/* Imagen principal completa sin recortes */}
+            <img src={img} alt="Hero" className="relative z-0 w-full h-full object-contain drop-shadow-2xl" />
           </div>
         ))}
         
