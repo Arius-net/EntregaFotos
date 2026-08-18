@@ -62,6 +62,22 @@ export default function StorePage() {
     localStorage.setItem('photo_cart', JSON.stringify(cart));
   }, [cart]);
 
+  // Sincronizar las URLs de imágenes del carrito (que expiran) con los items recién cargados
+  useEffect(() => {
+    if (items.length > 0 && cart.length > 0) {
+      let updated = false;
+      const syncedCart = cart.map(cartItem => {
+        const fresh = items.find(i => i.id === cartItem.id);
+        if (fresh && fresh.thumbnail_url !== cartItem.thumbnail_url) {
+          updated = true;
+          return { ...cartItem, thumbnail_url: fresh.thumbnail_url, price: fresh.price, title: fresh.title };
+        }
+        return cartItem;
+      });
+      if (updated) setCart(syncedCart);
+    }
+  }, [items]);
+
   const fetchItems = async () => {
     try {
       const res = await fetch(`${API_URL}/api/store`);
