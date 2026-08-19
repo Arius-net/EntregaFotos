@@ -409,7 +409,7 @@ export default function LandingPage() {
               <li><a href="#portfolio" className="text-gray-400 hover:text-white transition-colors">Portafolio</a></li>
               <li><button onClick={() => router.push('/portal')} className="text-gray-400 hover:text-white transition-colors">Entregas</button></li>
               <li><button onClick={() => router.push('/store')} className="text-gray-400 hover:text-white transition-colors">Tienda</button></li>
-              <li><a href="/admin/dashboard" className="text-[#8892f0] hover:text-white transition-colors font-medium">Panel Admin</a></li>
+
             </ul>
           </div>
 
