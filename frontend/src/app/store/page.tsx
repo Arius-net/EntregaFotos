@@ -23,7 +23,7 @@ export default function StorePage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
   const [items, setItems] = useState<StoreItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState<string>('Todos');
+  const [activeCategory, setActiveCategory] = useState<string>('General');
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -248,8 +248,10 @@ export default function StorePage() {
   };
 
   // Filtros
-  const categories = ['Todos', ...Array.from(new Set(items.map(item => item.category || 'General')))];
-  const filteredItems = activeCategory === 'Todos' ? items : items.filter(item => (item.category || 'General') === activeCategory);
+  // Filtros
+  const uniqueCategories = Array.from(new Set(items.map(item => item.category).filter((c): c is string => !!c && c !== 'General')));
+  const categories = ['General', ...uniqueCategories];
+  const filteredItems = activeCategory === 'General' ? items : items.filter(item => item.category === activeCategory);
 
   // Paginación
   const indexOfLastItem = currentPage * itemsPerPage;

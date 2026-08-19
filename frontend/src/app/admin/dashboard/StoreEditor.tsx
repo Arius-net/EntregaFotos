@@ -507,15 +507,17 @@ export default function StoreEditor() {
                     <>
                       <span className="text-gray-200 font-medium">{cat}</span>
                       <div className="flex gap-2">
-                        <button 
-                          onClick={() => {
-                            setCategoryToRename(cat);
-                            setRenameInput(cat);
-                          }}
-                          className="text-blue-500 hover:text-blue-400 text-sm"
-                        >
-                          Renombrar
-                        </button>
+                        {cat !== 'General' && (
+                          <button 
+                            onClick={() => {
+                              setCategoryToRename(cat);
+                              setRenameInput(cat);
+                            }}
+                            className="text-blue-500 hover:text-blue-400 text-sm"
+                          >
+                            Renombrar
+                          </button>
+                        )}
                         {cat !== 'General' && (
                           <button 
                             onClick={() => handleDeleteCategory(cat)}
