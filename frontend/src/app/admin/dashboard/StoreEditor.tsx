@@ -53,7 +53,7 @@ export default function StoreEditor() {
     try {
       const token = sessionStorage.getItem('token');
       // En el backend, si mandamos token y es admin, debería devolver todo (incluido inactivos)
-      const res = await fetch(`${API_URL}/api/store`, {
+      const res = await fetch(`${API_URL}/api/store?ts=${Date.now()}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -201,20 +201,22 @@ export default function StoreEditor() {
   };
 
   const handleRenameCategory = async (oldCategory: string, newCategory: string) => {
-    if (!newCategory.trim()) return;
+    const trimmedNewCategory = newCategory.trim();
+    if (!trimmedNewCategory) return;
     try {
       const token = sessionStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/store/categories/rename`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ oldCategory, newCategory })
+        body: JSON.stringify({ oldCategory, newCategory: trimmedNewCategory })
       });
       if (res.ok) {
         toast.success('Categoría renombrada');
         setCategoryToRename(null);
         fetchItems();
       } else {
-        toast.error('Error al renombrar');
+        const err = await res.json();
+        toast.error(err.error || 'Error al renombrar');
       }
     } catch (e) {
       toast.error('Error de red');
