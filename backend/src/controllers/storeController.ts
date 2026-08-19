@@ -46,6 +46,40 @@ export const createStoreItem = async (req: Request, res: Response) => {
   }
 };
 
+export const renameStoreCategory = async (req: Request, res: Response) => {
+  try {
+    const { oldCategory, newCategory } = req.body;
+    if (!oldCategory || !newCategory) {
+      return res.status(400).json({ error: 'Nombres de categoría inválidos' });
+    }
+    await prisma.storeItem.updateMany({
+      where: { category: oldCategory },
+      data: { category: newCategory }
+    });
+    res.json({ message: 'Categoría renombrada con éxito' });
+  } catch (error) {
+    console.error('Error renaming category:', error);
+    res.status(500).json({ error: 'Error al renombrar categoría' });
+  }
+};
+
+export const deleteStoreCategory = async (req: Request, res: Response) => {
+  try {
+    const { category } = req.body;
+    if (!category) {
+      return res.status(400).json({ error: 'Categoría inválida' });
+    }
+    await prisma.storeItem.updateMany({
+      where: { category: category },
+      data: { category: 'General' } // Las devolvemos a General
+    });
+    res.json({ message: 'Categoría eliminada y fondos movidos a General' });
+  } catch (error) {
+    console.error('Error deleting category:', error);
+    res.status(500).json({ error: 'Error al eliminar categoría' });
+  }
+};
+
 export const getStoreItems = async (req: Request, res: Response) => {
   try {
     let isAdmin = false;

@@ -36,6 +36,11 @@ export default function StoreEditor() {
   const [editCategory, setEditCategory] = useState('General');
   const [editCustomCategory, setEditCustomCategory] = useState('');
 
+  // Category Management Modal State
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [categoryToRename, setCategoryToRename] = useState<string | null>(null);
+  const [renameInput, setRenameInput] = useState('');
+
   // Extract all categories currently in DB plus default ones
   const defaultCategories = ['General', 'Escritorio', 'Móvil', 'Tablet'];
   const allCategories = Array.from(new Set([...defaultCategories, ...items.map(item => item.category || 'General')]));
@@ -195,13 +200,62 @@ export default function StoreEditor() {
     }
   };
 
+  const handleRenameCategory = async (oldCategory: string, newCategory: string) => {
+    if (!newCategory.trim()) return;
+    try {
+      const token = sessionStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/store/categories/rename`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ oldCategory, newCategory })
+      });
+      if (res.ok) {
+        toast.success('Categoría renombrada');
+        setCategoryToRename(null);
+        fetchItems();
+      } else {
+        toast.error('Error al renombrar');
+      }
+    } catch (e) {
+      toast.error('Error de red');
+    }
+  };
+
+  const handleDeleteCategory = async (cat: string) => {
+    if (!confirm(`¿Seguro que deseas eliminar la categoría "${cat}"? Los fondos se moverán a "General".`)) return;
+    try {
+      const token = sessionStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/store/categories/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ category: cat })
+      });
+      if (res.ok) {
+        toast.success('Categoría eliminada');
+        fetchItems();
+      } else {
+        toast.error('Error al eliminar');
+      }
+    } catch (e) {
+      toast.error('Error de red');
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Formulario de Subida */}
-      <div className="bg-gray-900 rounded-2xl p-6 md:p-8 border border-gray-800 shadow-xl">
-        <h2 className="text-2xl font-bold text-amber-500 mb-6 border-b border-gray-800 pb-4">Añadir a la Tienda</h2>
+      <div className="bg-[#0a0c1a] border border-gray-800 rounded-3xl p-8 relative overflow-hidden">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">Añadir Nuevo Fondo</h2>
+          <button 
+            onClick={() => setIsCategoryModalOpen(true)}
+            className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-zinc-700 transition-colors"
+          >
+            Administrar Categorías
+          </button>
+        </div>
         
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input 
@@ -419,6 +473,71 @@ export default function StoreEditor() {
         </div>
       )}
 
+      {/* MODAL DE GESTIÓN DE CATEGORÍAS */}
+      {isCategoryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#0a0c1a] border border-gray-700 rounded-3xl p-8 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+            <h3 className="text-2xl font-bold text-white mb-6">Administrar Categorías</h3>
+            <div className="space-y-4">
+              {allCategories.map(cat => (
+                <div key={cat} className="flex items-center justify-between bg-zinc-900 border border-zinc-800 p-4 rounded-xl">
+                  {categoryToRename === cat ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <input 
+                        type="text" 
+                        value={renameInput}
+                        onChange={e => setRenameInput(e.target.value)}
+                        className="bg-zinc-800 border border-zinc-700 text-white rounded-lg px-3 py-1 flex-1"
+                      />
+                      <button 
+                        onClick={() => handleRenameCategory(cat, renameInput)}
+                        className="text-green-500 hover:text-green-400 p-1"
+                      >
+                        Guardar
+                      </button>
+                      <button 
+                        onClick={() => setCategoryToRename(null)}
+                        className="text-gray-400 hover:text-gray-300 p-1"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="text-gray-200 font-medium">{cat}</span>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => {
+                            setCategoryToRename(cat);
+                            setRenameInput(cat);
+                          }}
+                          className="text-blue-500 hover:text-blue-400 text-sm"
+                        >
+                          Renombrar
+                        </button>
+                        {cat !== 'General' && (
+                          <button 
+                            onClick={() => handleDeleteCategory(cat)}
+                            className="text-red-500 hover:text-red-400 text-sm"
+                          >
+                            Eliminar
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button 
+              onClick={() => setIsCategoryModalOpen(false)}
+              className="mt-8 w-full py-3 rounded-xl border border-gray-600 text-gray-300 hover:bg-gray-800 transition-colors"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

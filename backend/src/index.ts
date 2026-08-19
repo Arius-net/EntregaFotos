@@ -11,7 +11,7 @@ import { downloadFreePhotos, downloadAllFinalPhotos } from './controllers/downlo
 import { createPreference, verifyPayment, clipWebhook } from './controllers/paymentController';
 import { login, register, requestClientPin, verifyClientPin } from './controllers/authController';
 import { getSettings, updateSettings, uploadLandingPhoto } from './controllers/settingsController';
-import { createStoreItem, getStoreItems, updateStoreItem, deleteStoreItem, createOrder, getMyStoreOrders, getAllStoreOrders, downloadStoreItem } from './controllers/storeController';
+import { createStoreItem, getStoreItems, updateStoreItem, deleteStoreItem, createOrder, getMyStoreOrders, getAllStoreOrders, downloadStoreItem, renameStoreCategory, deleteStoreCategory } from './controllers/storeController';
 import { authenticateJWT } from './middlewares/authMiddleware';
 
 // Inicializar tarea cron
@@ -76,6 +76,8 @@ app.get('/api/store', getStoreItems);
 app.post('/api/store', authenticateJWT, upload.single('photo'), createStoreItem);
 app.put('/api/store/:id', authenticateJWT, updateStoreItem);
 app.delete('/api/store/:id', authenticateJWT, deleteStoreItem);
+app.post('/api/store/categories/rename', authenticateJWT, renameStoreCategory);
+app.post('/api/store/categories/delete', authenticateJWT, deleteStoreCategory);
 
 // Rutas de Órdenes de Tienda
 app.post('/api/store/orders', authenticateJWT, createOrder);
