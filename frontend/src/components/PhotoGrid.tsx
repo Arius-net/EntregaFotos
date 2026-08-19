@@ -132,19 +132,24 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
       if (res.ok) {
         toast.success('Descarga iniciada de fotos desbloqueadas', { id: toastId });
         
-        // Descarga secuencial para evitar bloqueo de navegador
+        // Descarga secuencial usando iframes ocultos para evitar el bloqueo estricto del navegador
         for (let i = 0; i < data.urls.length; i++) {
           const item = data.urls[i];
-          const a = document.createElement('a');
-          a.href = item.url;
-          a.download = `photo_${item.photoId}.jpg`;
-          a.target = '_blank';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
+          
+          const iframe = document.createElement('iframe');
+          iframe.style.display = 'none';
+          iframe.src = item.url;
+          document.body.appendChild(iframe);
+          
+          // Removemos el iframe después de un tiempo razonable para no saturar el DOM
+          setTimeout(() => {
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+            }
+          }, 10000);
           
           if (i < data.urls.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5s entre descargas
           }
         }
 
@@ -207,19 +212,23 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
         const data = await res.json();
         toast.success('Iniciando descargas múltiples...', { id: toastId });
         
-        // Descarga secuencial
+        // Descarga secuencial con iframes
         for (let i = 0; i < data.urls.length; i++) {
           const item = data.urls[i];
-          const a = document.createElement('a');
-          a.href = item.url;
-          a.download = `photo_${item.photoId}.jpg`;
-          a.target = '_blank';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
+          
+          const iframe = document.createElement('iframe');
+          iframe.style.display = 'none';
+          iframe.src = item.url;
+          document.body.appendChild(iframe);
+          
+          setTimeout(() => {
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+            }
+          }, 10000);
           
           if (i < data.urls.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 1500));
           }
         }
       } else {
