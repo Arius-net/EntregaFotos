@@ -423,14 +423,14 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
                 disabled={isProcessing}
                 className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-6 py-3 rounded-xl font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isProcessing ? 'Procesando...' : '⬇️ Separadas'}
+                {isProcessing ? 'Procesando...' : '⬇️ Descargar Individualmente'}
               </button>
               <button
                 onClick={handleDownloadAllZip}
                 disabled={isProcessing}
                 className="w-full bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                📦 ZIP
+                📦 Descargar en ZIP
               </button>
             </div>
           </div>
@@ -470,14 +470,14 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
                     disabled={isProcessing}
                     className="w-full bg-zinc-800 hover:bg-zinc-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-all active:scale-95 disabled:opacity-50"
                   >
-                    {isProcessing ? '...' : '⬇️ Separadas'}
+                    {isProcessing ? '...' : '⬇️ Descargar Individualmente'}
                   </button>
                   <button
                     onClick={handleDownloadUnlockedZip}
                     disabled={isProcessing}
                     className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-3 rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all active:scale-95 disabled:opacity-50"
                   >
-                    {isProcessing ? 'Procesando...' : '📦 Bajar en ZIP'}
+                    {isProcessing ? 'Procesando...' : '📦 Descargar en ZIP'}
                   </button>
                 </div>
               ) : !isOverLimit ? (
