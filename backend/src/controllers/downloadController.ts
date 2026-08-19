@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../prismaClient';
 import { generateSecureDownloadUrl, getFileStream } from '../services/storage';
-const archiver = require('archiver');
+const { ZipArchive } = require('archiver');
 
 export const downloadFreePhotos = async (req: Request, res: Response) => {
   try {
@@ -209,7 +209,7 @@ export const downloadZip = async (req: Request, res: Response) => {
 
     // Configurar encabezados para el ZIP
     res.attachment(`fotos_galeria_${gallery_id}.zip`);
-    const archive = archiver('zip', { zlib: { level: 5 } }); // Nivel 5 para balancear velocidad/compresión
+    const archive = new ZipArchive({ zlib: { level: 5 } }); // Nivel 5 para balancear velocidad/compresión
     
     // Si la conexión se cierra temprano
     req.on('close', () => {
