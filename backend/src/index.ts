@@ -7,7 +7,7 @@ import { rateLimit } from 'express-rate-limit';
 // Importar controladores
 import { createGallery, updateGallery, deleteGallery, getGallery, getGalleriesByPhotographer, getUnlockedPhotos, verifyAccess, getSelectedPhotos, toggleSelection, submitSelection, getAdminSelection } from './controllers/galleryController';
 import { uploadPhotos } from './controllers/photoController';
-import { downloadFreePhotos, downloadAllFinalPhotos } from './controllers/downloadController';
+import { downloadFreePhotos, downloadAllFinalPhotos, downloadZip } from './controllers/downloadController';
 import { createPreference, verifyPayment, clipWebhook } from './controllers/paymentController';
 import { login, register, requestClientPin, verifyClientPin } from './controllers/authController';
 import { getSettings, updateSettings, uploadLandingPhoto } from './controllers/settingsController';
@@ -87,6 +87,7 @@ app.get('/api/admin/store/orders', authenticateJWT, getAllStoreOrders);
 // Rutas de Descarga
 app.post('/api/downloads/free', authenticateJWT, downloadFreePhotos);
 app.get('/api/downloads/:gallery_id/all', authenticateJWT, downloadAllFinalPhotos);
+app.get('/api/downloads/:gallery_id/zip', authenticateJWT, downloadZip);
 app.get('/api/store/download/:orderId/:itemId', authenticateJWT, downloadStoreItem);
 
 // Rutas de Pagos (Mercado Pago)

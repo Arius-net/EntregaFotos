@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../prismaClient';
-import { generateSecureDownloadUrl } from '../services/storage';
+import { generateSecureDownloadUrl, getFileStream } from '../services/storage';
+import archiver from 'archiver';
 
 export const downloadFreePhotos = async (req: Request, res: Response) => {
   try {
@@ -145,6 +146,99 @@ export const downloadAllFinalPhotos = async (req: Request, res: Response) => {
 
   } catch (error) {
     console.error('Error en downloadAllFinalPhotos:', error);
-    res.status(500).json({ error: 'Error procesando la solicitud' });
+    res.status(500).json({ error: 'Error al obtener URLs de descarga completas' });
+  }
+};
+
+// NUEVOS ENDPOINTS PARA DESCARGAR ZIP (usando método GET con ids pasados por query param o todos si no hay ids)
+export const downloadZip = async (req: Request, res: Response) => {
+  try {
+    const gallery_id = parseInt(req.params.gallery_id);
+    const { ids } = req.query; // e.g. ids=1,2,3
+    const client_id = (req as any).user?.id;
+
+    if (!client_id || isNaN(gallery_id)) return res.status(401).json({ error: 'No autorizado o parámetros inválidos' });
+
+    let client = await prisma.client.findUnique({ where: { id: client_id } });
+    if (!client) return res.status(404).json({ error: 'Cliente no encontrado' });
+
+    const gallery = await prisma.gallery.findUnique({ where: { id: gallery_id } });
+    if (!gallery) return res.status(404).json({ error: 'Gallery not found' });
+
+    let photosToDownload = [];
+
+    if (ids) {
+      // Descargar selección específica (requiere verificar que estén desbloqueadas de alguna manera)
+      const selectedIds = (ids as string).split(',').map(id => parseInt(id));
+      
+      const unlocked = await prisma.unlockedPhoto.findMany({
+        where: {
+          client_id: client.id,
+          photo_id: { in: selectedIds },
+          OR: [
+            { unlock_method: 'free' },
+            { transaction: { status: 'completed' } }
+          ]
+        },
+        include: { photo: true }
+      });
+      photosToDownload = unlocked.map(u => u.photo);
+      
+      // NOTA: No hacemos logica de descontar limites gratis aquí. 
+      // Se asume que el usuario primero desbloqueó las fotos vía POST /api/downloads/free
+      // y luego de que se desbloquearon, apretó "Descargar ZIP".
+    } else {
+      // Descargar TODO (finalizado)
+      if (gallery.status !== 'completed' && gallery.status !== 'delivered') {
+        return res.status(403).json({ error: 'La galería no está completada' });
+      }
+      
+      // Si el cliente pagó la galería completa (para las galerías enteras pagadas o con pin full access)
+      // O solo las que haya desbloqueado. Para "Descargar Todo" en PhotoGrid.tsx, bajamos todas las que tengan high_res_key en galerías completed/delivered
+      photosToDownload = await prisma.photo.findMany({
+        where: {
+          gallery_id: gallery_id,
+          high_res_key: { not: null }
+        }
+      });
+    }
+
+    if (photosToDownload.length === 0) {
+      return res.status(404).json({ error: 'No hay fotos para descargar' });
+    }
+
+    // Configurar encabezados para el ZIP
+    res.attachment(`fotos_galeria_${gallery_id}.zip`);
+    const archive = archiver('zip', { zlib: { level: 5 } }); // Nivel 5 para balancear velocidad/compresión
+    
+    // Si la conexión se cierra temprano
+    req.on('close', () => {
+      archive.abort();
+    });
+
+    archive.on('error', (err) => {
+      throw err;
+    });
+
+    archive.pipe(res);
+
+    // Añadir cada foto al zip
+    for (const photo of photosToDownload) {
+      if (photo.high_res_key) {
+        try {
+          const stream = await getFileStream(photo.high_res_key);
+          archive.append(stream, { name: `foto_${photo.id}.jpg` });
+        } catch (err) {
+          console.error(`Error al incluir la foto ${photo.id} en el ZIP`, err);
+        }
+      }
+    }
+
+    await archive.finalize();
+  } catch (error) {
+    console.error('Error generando ZIP:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Error procesando la descarga ZIP' });
+    }
   }
 };

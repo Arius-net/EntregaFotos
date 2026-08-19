@@ -240,6 +240,49 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
     setIsProcessing(false);
   };
 
+  const handleDownloadUnlockedZip = async () => {
+    setIsProcessing(true);
+    const toastId = toast.loading('Preparando archivo ZIP...');
+    try {
+      const token = localStorage.getItem('client_token');
+      // Primero registramos el desbloqueo
+      const res = await fetch(`${API_URL}/api/downloads/free`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          gallery_id: galleryId,
+          selected_photo_ids: Array.from(selectedIds)
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('Descarga ZIP en curso...', { id: toastId });
+        
+        const ids = Array.from(selectedIds).join(',');
+        window.location.href = `${API_URL}/api/downloads/${galleryId}/zip?token=${token}&ids=${ids}`;
+
+        setTimeout(() => {
+          setSelectedIds(new Set());
+          fetchUnlockedPhotos();
+        }, 2000);
+      } else {
+        toast.error(data.error || 'Error al procesar la descarga', { id: toastId });
+      }
+    } catch (e) {
+      toast.error('Error de conexión', { id: toastId });
+    }
+    setIsProcessing(false);
+  };
+
+  const handleDownloadAllZip = () => {
+    const token = localStorage.getItem('client_token');
+    toast.success('Descargando archivo ZIP...');
+    window.location.href = `${API_URL}/api/downloads/${galleryId}/zip?token=${token}`;
+  };
+
   // Cálculos de precios y límites
   const selectedCount = selectedIds.size;
   const newSelectedCount = Array.from(selectedIds).filter(id => !unlockedIds.has(id)).length;
@@ -374,13 +417,20 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
                 <p className="text-gray-300 text-xs mt-1">Descarga tu paquete completo de fotos editadas en alta resolución.</p>
               </div>
             </div>
-            <div className="w-full md:w-auto">
+            <div className="w-full md:w-auto flex flex-col sm:flex-row gap-2">
               <button
                 onClick={handleDownloadAll}
                 disabled={isProcessing}
-                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-8 py-3 rounded-xl font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-6 py-3 rounded-xl font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isProcessing ? 'Procesando...' : '⬇️ Descargar Todas (Directo)'}
+                {isProcessing ? 'Procesando...' : '⬇️ Separadas'}
+              </button>
+              <button
+                onClick={handleDownloadAllZip}
+                disabled={isProcessing}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                📦 ZIP
               </button>
             </div>
           </div>
@@ -414,13 +464,22 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
                   Selecciona fotos para continuar
                 </div>
               ) : areAllSelectedAlreadyUnlocked ? (
-                <button
-                  onClick={handleDownloadUnlocked}
-                  disabled={isProcessing}
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-8 py-3 rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all active:scale-95 disabled:opacity-50"
-                >
-                  {isProcessing ? 'Descargando...' : '⬇️ Descargar'}
-                </button>
+                <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                  <button
+                    onClick={handleDownloadUnlocked}
+                    disabled={isProcessing}
+                    className="w-full bg-zinc-800 hover:bg-zinc-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {isProcessing ? '...' : '⬇️ Separadas'}
+                  </button>
+                  <button
+                    onClick={handleDownloadUnlockedZip}
+                    disabled={isProcessing}
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-3 rounded-xl font-bold shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {isProcessing ? 'Procesando...' : '📦 Bajar en ZIP'}
+                  </button>
+                </div>
               ) : !isOverLimit ? (
                 <button
                   onClick={handleDownloadUnlocked}

@@ -12,10 +12,15 @@ export interface AuthRequest extends Request {
 
 export const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
+  let token = null;
 
   if (authHeader) {
-    const token = authHeader.split(' ')[1]; // Bearer TOKEN
+    token = authHeader.split(' ')[1]; // Bearer TOKEN
+  } else if (req.query && req.query.token) {
+    token = req.query.token as string;
+  }
 
+  if (token) {
     jwt.verify(token, JWT_SECRET, (err, user) => {
       if (err) {
         return res.sendStatus(403); // Forbidden
