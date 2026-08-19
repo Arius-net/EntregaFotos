@@ -14,6 +14,7 @@ export default function LandingPage() {
   const [activePortfolioFolder, setActivePortfolioFolder] = useState<number>(0);
   const [activePhotoIndices, setActivePhotoIndices] = useState<Record<number, number>>({});
   const [settings, setSettings] = useState<any>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -65,12 +66,32 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="md:hidden flex items-center">
-               <button className="text-white hover:text-gray-300 focus:outline-none">
-                 <Camera size={24} />
+               <button 
+                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+                 className="text-white hover:text-gray-300 focus:outline-none p-2"
+               >
+                 {isMobileMenuOpen ? (
+                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                 ) : (
+                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                 )}
                </button>
             </div>
           </div>
         </div>
+        
+        {/* Mobile Menu Dropdown */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden bg-[#171c54]/95 backdrop-blur-xl border-b border-white/10 absolute top-20 left-0 w-full animate-in slide-in-from-top-2">
+            <div className="px-4 pt-2 pb-6 space-y-2 flex flex-col shadow-2xl">
+              <a href="#about" onClick={() => setIsMobileMenuOpen(false)} className="hover:bg-white/10 px-4 py-3 rounded-lg text-base font-medium transition-colors">Sobre Mí</a>
+              <a href="#portfolio" onClick={() => setIsMobileMenuOpen(false)} className="hover:bg-white/10 px-4 py-3 rounded-lg text-base font-medium transition-colors">Portafolio</a>
+              <button onClick={() => { setIsMobileMenuOpen(false); router.push('/portal'); }} className="hover:bg-white/10 px-4 py-3 rounded-lg text-base font-medium transition-colors text-left w-full">Entregas</button>
+              <button onClick={() => { setIsMobileMenuOpen(false); router.push('/store'); }} className="hover:bg-white/10 px-4 py-3 rounded-lg text-base font-medium transition-colors text-left w-full">Tienda</button>
+              <a href="#contact" onClick={() => setIsMobileMenuOpen(false)} className="hover:bg-white/10 px-4 py-3 rounded-lg text-base font-medium transition-colors">Contacto</a>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* HERO SECTION */}
@@ -93,20 +114,20 @@ export default function LandingPage() {
         </button>
 
         <div className="relative z-20 text-center px-4 max-w-4xl mx-auto mt-20">
-          <h2 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 drop-shadow-2xl">
+          <h2 className="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight mb-6 drop-shadow-2xl">
             {settings?.hero_title || 'Capturando momentos,'} <br/>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#aab2fc] to-white">
               {settings?.hero_subtitle || 'contando tu historia.'}
             </span>
           </h2>
-          <p className="text-lg md:text-xl text-gray-200 mb-10 max-w-2xl mx-auto drop-shadow-lg font-light">
+          <p className="text-base sm:text-lg md:text-xl text-gray-200 mb-10 max-w-2xl mx-auto drop-shadow-lg font-light">
             {settings?.hero_description || 'Especializado en fotografía premium de bodas, eventos y retratos. Cada disparo es una pieza de arte diseñada para perdurar.'}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="#portfolio" className="px-8 py-4 bg-white text-[#171c54] font-bold rounded-full hover:bg-gray-100 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+            <a href="#portfolio" className="px-8 py-4 bg-white text-[#171c54] font-bold rounded-full hover:bg-gray-100 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)] text-center">
               Ver Portafolio
             </a>
-            <button onClick={() => router.push('/portal')} className="px-8 py-4 bg-transparent border-2 border-white/50 text-white font-bold rounded-full hover:bg-white/10 hover:border-white transition-all">
+            <button onClick={() => router.push('/portal')} className="px-8 py-4 bg-transparent border-2 border-white/50 text-white font-bold rounded-full hover:bg-white/10 hover:border-white transition-all text-center">
               Zona de Clientes
             </button>
           </div>
