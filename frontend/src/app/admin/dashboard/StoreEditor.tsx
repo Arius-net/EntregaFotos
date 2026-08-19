@@ -23,6 +23,7 @@ export default function StoreEditor() {
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('10.00');
   const [category, setCategory] = useState('General');
+  const [customCategory, setCustomCategory] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -33,6 +34,11 @@ export default function StoreEditor() {
   const [editDescription, setEditDescription] = useState('');
   const [editPrice, setEditPrice] = useState('');
   const [editCategory, setEditCategory] = useState('General');
+  const [editCustomCategory, setEditCustomCategory] = useState('');
+
+  // Extract all categories currently in DB plus default ones
+  const defaultCategories = ['General', 'Escritorio', 'Móvil', 'Tablet'];
+  const allCategories = Array.from(new Set([...defaultCategories, ...items.map(item => item.category || 'General')]));
 
   useEffect(() => {
     fetchItems();
@@ -77,12 +83,14 @@ export default function StoreEditor() {
 
     try {
       const token = sessionStorage.getItem('token');
+      const finalCategory = category === 'Nueva...' ? customCategory : category;
+
       const formData = new FormData();
       formData.append('photo', selectedFile);
       formData.append('title', title);
       formData.append('description', description);
       formData.append('price', price);
-      formData.append('category', category);
+      formData.append('category', finalCategory || 'General');
 
       const res = await fetch(`${API_URL}/api/store`, {
         method: 'POST',
@@ -97,6 +105,7 @@ export default function StoreEditor() {
         setDescription('');
         setPrice('10.00');
         setCategory('General');
+        setCustomCategory('');
         setSelectedFile(null);
       } else {
         toast.error('Error al subir foto', { id: toastId });
@@ -153,15 +162,17 @@ export default function StoreEditor() {
     setEditDescription(item.description);
     setEditPrice(item.price);
     setEditCategory(item.category || 'General');
+    setEditCustomCategory('');
   };
 
   const saveEdit = async () => {
     if (!editingItem) return;
     try {
+      const finalCategory = editCategory === 'Nueva...' ? editCustomCategory : editCategory;
       const token = sessionStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/store/${editingItem.id}`, {
         method: 'PUT',
-        headers: {
+        headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
@@ -169,7 +180,7 @@ export default function StoreEditor() {
           title: editTitle,
           description: editDescription,
           price: editPrice,
-          category: editCategory
+          category: finalCategory || 'General'
         })
       });
       if (res.ok) {
@@ -209,16 +220,28 @@ export default function StoreEditor() {
               />
             </div>
             
-            <select 
-              className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-3"
-              value={category}
-              onChange={e => setCategory(e.target.value)}
-            >
-              <option value="General">General</option>
-              <option value="Escritorio">Escritorio</option>
-              <option value="Móvil">Móvil</option>
-              <option value="Tablet">Tablet</option>
-            </select>
+            <div className="flex gap-2 w-full">
+              <select 
+                className={`bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-3 ${category === 'Nueva...' ? 'w-1/3' : 'w-full'}`}
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+              >
+                {allCategories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+                <option value="Nueva...">Nueva Categoría...</option>
+              </select>
+              
+              {category === 'Nueva...' && (
+                <input 
+                  type="text" 
+                  placeholder="Nombre de nueva categoría" 
+                  className="w-2/3 bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-3"
+                  value={customCategory}
+                  onChange={e => setCustomCategory(e.target.value)}
+                />
+              )}
+            </div>
 
             <div>
               <label className="text-sm text-gray-400 block mb-1">Descripción corta (opcional)</label>
@@ -344,16 +367,28 @@ export default function StoreEditor() {
                 </div>
                 <div>
                   <label className="text-zinc-400 text-sm mb-1 block">Categoría / Dispositivo</label>
-                  <select 
-                    className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-3"
-                    value={editCategory}
-                    onChange={e => setEditCategory(e.target.value)}
-                  >
-                    <option value="General">General</option>
-                    <option value="Escritorio">Escritorio</option>
-                    <option value="Móvil">Móvil</option>
-                    <option value="Tablet">Tablet</option>
-                  </select>
+                  <div className="flex gap-2">
+                    <select 
+                      className={`bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-3 ${editCategory === 'Nueva...' ? 'w-1/3' : 'w-full'}`}
+                      value={editCategory}
+                      onChange={e => setEditCategory(e.target.value)}
+                    >
+                      {allCategories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                      <option value="Nueva...">Nueva...</option>
+                    </select>
+
+                    {editCategory === 'Nueva...' && (
+                      <input 
+                        type="text" 
+                        placeholder="Nueva categoría" 
+                        className="w-2/3 bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-3"
+                        value={editCustomCategory}
+                        onChange={e => setEditCustomCategory(e.target.value)}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
               <div>
