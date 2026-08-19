@@ -12,6 +12,7 @@ interface StoreItem {
   description: string;
   price: string;
   thumbnail_url: string;
+  category?: string;
 }
 
 interface CartItem extends StoreItem {
@@ -22,6 +23,7 @@ export default function StorePage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
   const [items, setItems] = useState<StoreItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState<string>('Todos');
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -245,14 +247,23 @@ export default function StorePage() {
     }
   };
 
+  // Filtros
+  const categories = ['Todos', ...Array.from(new Set(items.map(item => item.category || 'General')))];
+  const filteredItems = activeCategory === 'Todos' ? items : items.filter(item => (item.category || 'General') === activeCategory);
+
   // Paginación
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = items.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(items.length / itemsPerPage);
+  const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
 
   const nextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
   const prevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
+
+  // Reset page when category changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory]);
 
   return (
     <div className="min-h-screen bg-[#05060d] text-white font-sans selection:bg-[#282e70] selection:text-white pb-20">
@@ -305,13 +316,33 @@ export default function StorePage() {
 
       {/* MASONRY GRID */}
       <main className="max-w-[1400px] mx-auto px-4 sm:px-6">
+        
+        {/* Categorías / Filtros */}
+        {!isLoading && items.length > 0 && (
+          <div className="flex justify-center gap-4 mb-12 flex-wrap">
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-6 py-2 rounded-full font-medium transition-all ${
+                  activeCategory === cat 
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
+                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
+
         {isLoading ? (
-          <div className="flex justify-center items-center h-64">
+          <div className="flex justify-center items-center py-32">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
           </div>
-        ) : items.length === 0 ? (
-          <div className="text-center text-gray-500 py-20 bg-white/5 rounded-3xl border border-white/10">
-            Aún no hay fotos en la tienda. Vuelve pronto.
+        ) : filteredItems.length === 0 ? (
+          <div className="text-center py-20 text-gray-500 text-lg font-medium">
+            No hay fondos disponibles en esta categoría.
           </div>
         ) : (
           <>

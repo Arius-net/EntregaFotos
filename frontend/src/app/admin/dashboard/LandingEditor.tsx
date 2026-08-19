@@ -22,8 +22,7 @@ interface LandingSettings {
 
   portfolio_title: string;
   portfolio_description: string;
-  portfolio_images: string[];
-  portfolio_images_urls?: string[];
+  portfolio_folders?: { name: string; images: string[]; images_urls?: string[] }[];
 
   whatsapp_number: string;
   email: string;
@@ -45,6 +44,7 @@ export default function LandingEditor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadTargetRef = useRef<'hero' | 'about' | 'portfolio' | 'logo' | null>(null);
   const [uploadTargetState, setUploadTargetState] = useState<'hero' | 'about' | 'portfolio' | 'logo' | null>(null);
+  const [uploadFolderIndex, setUploadFolderIndex] = useState<number | null>(null);
 
   useEffect(() => {
     fetchSettings();
@@ -71,12 +71,18 @@ export default function LandingEditor() {
     setIsSaving(true);
     try {
       const token = sessionStorage.getItem('token');
-      // Limpiamos las urls firmadas antes de guardar para no mandar basura a la bd
       const dataToSave = { ...settings };
       delete dataToSave.hero_images_urls;
       delete dataToSave.about_image_url;
-      delete dataToSave.portfolio_images_urls;
       delete dataToSave.logo_image_url;
+      
+      // Limpiar urls del portafolio
+      if (dataToSave.portfolio_folders) {
+        dataToSave.portfolio_folders = dataToSave.portfolio_folders.map(f => ({
+          name: f.name,
+          images: f.images
+        }));
+      }
 
       const res = await fetch(`${API_URL}/api/settings/landing`, {
         method: 'PUT',
@@ -100,9 +106,12 @@ export default function LandingEditor() {
     }
   };
 
-  const triggerUpload = (target: 'hero' | 'about' | 'portfolio' | 'logo') => {
+  const triggerUpload = (target: 'hero' | 'about' | 'portfolio' | 'logo', folderIndex: number | null = null) => {
     uploadTargetRef.current = target;
     setUploadTargetState(target);
+    if (target === 'portfolio') {
+      setUploadFolderIndex(folderIndex);
+    }
     if (fileInputRef.current) {
       if (target === 'hero' || target === 'portfolio') {
         fileInputRef.current.multiple = true;
@@ -149,9 +158,13 @@ export default function LandingEditor() {
       if (target === 'hero') {
         newSettings.hero_images = [...(newSettings.hero_images || []), ...uploadedKeys];
         newSettings.hero_images_urls = [...(newSettings.hero_images_urls || []), ...objectUrls];
-      } else if (target === 'portfolio') {
-        newSettings.portfolio_images = [...(newSettings.portfolio_images || []), ...uploadedKeys];
-        newSettings.portfolio_images_urls = [...(newSettings.portfolio_images_urls || []), ...objectUrls];
+      } else if (target === 'portfolio' && uploadFolderIndex !== null) {
+        const folders = [...(newSettings.portfolio_folders || [])];
+        if (folders[uploadFolderIndex]) {
+          folders[uploadFolderIndex].images = [...(folders[uploadFolderIndex].images || []), ...uploadedKeys];
+          folders[uploadFolderIndex].images_urls = [...(folders[uploadFolderIndex].images_urls || []), ...objectUrls];
+          newSettings.portfolio_folders = folders;
+        }
       } else if (target === 'about') {
         newSettings.about_image = uploadedKeys[0];
         newSettings.about_image_url = objectUrls[0];
@@ -168,19 +181,38 @@ export default function LandingEditor() {
       setUploading(false);
       uploadTargetRef.current = null;
       setUploadTargetState(null);
+      setUploadFolderIndex(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const removeImage = (target: 'hero' | 'portfolio', index: number) => {
+  const addPortfolioFolder = () => {
+    if (!settings) return;
+    setSettings({
+      ...settings,
+      portfolio_folders: [...(settings.portfolio_folders || []), { name: 'Nueva Carpeta', images: [], images_urls: [] }]
+    });
+  };
+
+  const removePortfolioFolder = (index: number) => {
+    if (!settings) return;
+    if (!confirm('¿Seguro que deseas eliminar esta carpeta entera?')) return;
+    const folders = [...(settings.portfolio_folders || [])];
+    folders.splice(index, 1);
+    setSettings({ ...settings, portfolio_folders: folders });
+  };
+
+  const removeImage = (target: 'hero' | 'portfolio', index: number, folderIndex?: number) => {
     if (!settings) return;
     const newSettings = { ...settings };
     if (target === 'hero') {
       newSettings.hero_images.splice(index, 1);
       newSettings.hero_images_urls?.splice(index, 1);
-    } else {
-      newSettings.portfolio_images.splice(index, 1);
-      newSettings.portfolio_images_urls?.splice(index, 1);
+    } else if (target === 'portfolio' && folderIndex !== undefined) {
+      if (newSettings.portfolio_folders && newSettings.portfolio_folders[folderIndex]) {
+        newSettings.portfolio_folders[folderIndex].images.splice(index, 1);
+        newSettings.portfolio_folders[folderIndex].images_urls?.splice(index, 1);
+      }
     }
     setSettings(newSettings);
   };
@@ -356,13 +388,13 @@ export default function LandingEditor() {
       {/* SECCIÓN PORTAFOLIO */}
       <div className="bg-gray-950 p-6 rounded-xl border border-gray-800">
         <div className="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
-          <h3 className="text-xl font-semibold text-white">Portafolio Profesional</h3>
-          <button type="button" onClick={() => triggerUpload('portfolio')} className="text-xs bg-gray-800 hover:bg-gray-700 px-3 py-1 rounded text-white border border-gray-600">
-            Añadir Fotos
+          <h3 className="text-xl font-semibold text-white">Portafolio Profesional (Carpetas)</h3>
+          <button type="button" onClick={addPortfolioFolder} className="text-xs bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-white font-medium">
+            + Crear Carpeta
           </button>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4 mb-6">
+        <div className="grid md:grid-cols-2 gap-4 mb-8">
           <div>
             <label className="text-sm text-gray-400 block mb-1">Título del Portafolio</label>
             <input 
@@ -383,17 +415,51 @@ export default function LandingEditor() {
           </div>
         </div>
         
-        <div className="columns-2 md:columns-4 lg:columns-5 gap-4 space-y-4">
-          {settings.portfolio_images?.map((key, idx) => (
-            <div key={key} className="relative group break-inside-avoid rounded-lg overflow-hidden border border-gray-700 bg-gray-800">
-              <img src={settings.portfolio_images_urls?.[idx] || ''} alt="Portafolio" className="w-full h-32 object-cover" />
-              <button type="button" onClick={() => removeImage('portfolio', idx)} className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
-                ✕
-              </button>
+        <div className="space-y-6">
+          {settings.portfolio_folders?.map((folder, folderIdx) => (
+            <div key={folderIdx} className="border border-gray-700 rounded-xl p-4 bg-gray-900">
+              <div className="flex justify-between items-center mb-4">
+                <input 
+                  type="text" 
+                  value={folder.name}
+                  onChange={(e) => {
+                    if (!settings) return;
+                    const newFolders = [...(settings.portfolio_folders || [])];
+                    newFolders[folderIdx].name = e.target.value;
+                    setSettings({ ...settings, portfolio_folders: newFolders });
+                  }}
+                  className="bg-transparent border-b border-gray-600 text-lg font-semibold text-white px-1 py-1 focus:outline-none focus:border-blue-500"
+                  placeholder="Nombre de Carpeta"
+                />
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => triggerUpload('portfolio', folderIdx)} className="text-xs bg-gray-800 hover:bg-gray-700 px-3 py-1 rounded text-white border border-gray-600">
+                    Añadir Fotos
+                  </button>
+                  <button type="button" onClick={() => removePortfolioFolder(folderIdx)} className="text-xs bg-red-900/50 hover:bg-red-900 text-red-200 px-3 py-1 rounded border border-red-800">
+                    Borrar Carpeta
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar items-start">
+                {folder.images?.map((key, imgIdx) => (
+                  <div key={key} className="relative group w-32 shrink-0 rounded-lg overflow-hidden border border-gray-700 bg-gray-800">
+                    <img src={folder.images_urls?.[imgIdx] || ''} alt="Portafolio" className="w-full h-24 object-cover" />
+                    <button type="button" onClick={() => removeImage('portfolio', imgIdx, folderIdx)} className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                {(!folder.images || folder.images.length === 0) && (
+                  <span className="text-sm text-gray-500 italic py-2">Vacío.</span>
+                )}
+              </div>
             </div>
           ))}
-          {(!settings.portfolio_images || settings.portfolio_images.length === 0) && (
-            <div className="col-span-full text-sm text-gray-500 italic py-4">No has subido fotos al portafolio.</div>
+          {(!settings.portfolio_folders || settings.portfolio_folders.length === 0) && (
+            <div className="text-center text-gray-500 py-8 bg-gray-900 rounded-xl border border-gray-800 border-dashed">
+              Aún no has creado ninguna carpeta para el portafolio.
+            </div>
           )}
         </div>
       </div>

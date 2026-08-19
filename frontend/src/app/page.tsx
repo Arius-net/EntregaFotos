@@ -11,6 +11,7 @@ export default function LandingPage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001';
   const [isLoading, setIsLoading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [activePortfolioFolder, setActivePortfolioFolder] = useState<number>(0);
   const [settings, setSettings] = useState<any>(null);
   const router = useRouter();
 
@@ -22,11 +23,13 @@ export default function LandingPage() {
   }, []);
 
   const currentHeroImages = settings?.hero_images_urls?.length ? settings.hero_images_urls : [];
-  const currentPortfolioImages = settings?.portfolio_images_urls?.length ? settings.portfolio_images_urls : [];
+  const currentPortfolioImages = settings?.portfolio_folders?.[activePortfolioFolder]?.images_urls || [];
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % currentHeroImages.length);
+      if (currentHeroImages.length > 0) {
+        setCurrentSlide((prev) => (prev + 1) % currentHeroImages.length);
+      }
     }, 5000);
     return () => clearInterval(timer);
   }, [currentHeroImages.length]);
@@ -157,20 +160,51 @@ export default function LandingPage() {
       {/* PORTFOLIO SECTION */}
       <section id="portfolio" className="py-24 bg-[#05060d] relative scroll-mt-20 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <div className="text-center mb-12">
             <h3 className="text-4xl md:text-5xl font-bold mb-6">{settings?.portfolio_title || 'Mis Mejores Trabajos'}</h3>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
               {settings?.portfolio_description || 'Una selección de mis capturas favoritas. Cada imagen es un testimonio de la dedicación y el amor por el arte fotográfico.'}
             </p>
           </div>
           
-          <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
-            {currentPortfolioImages.map((img: string, idx: number) => (
-              <div key={idx} className="relative group overflow-hidden rounded-2xl break-inside-avoid shadow-lg border border-white/10">
-                <img src={img} alt={`Portafolio ${idx + 1}`} className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700" />
+          {settings?.portfolio_folders && settings.portfolio_folders.length > 0 ? (
+            <>
+              {/* Folder Tabs */}
+              <div className="flex justify-center gap-4 mb-12 flex-wrap">
+                {settings.portfolio_folders.map((folder: any, idx: number) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActivePortfolioFolder(idx)}
+                    className={`px-6 py-2 rounded-full font-medium transition-all ${
+                      activePortfolioFolder === idx 
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
+                        : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white border border-white/5'
+                    }`}
+                  >
+                    {folder.name}
+                  </button>
+                ))}
               </div>
-            ))}
-          </div>
+
+              {/* Photos Carousel */}
+              <div className="flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory hide-scrollbar">
+                {currentPortfolioImages.map((img: string, idx: number) => (
+                  <div key={idx} className="relative group overflow-hidden rounded-2xl shrink-0 w-[85vw] sm:w-[400px] snap-center shadow-lg border border-white/10">
+                    <img src={img} alt={`Portafolio ${idx + 1}`} className="w-full h-[300px] sm:h-[450px] object-cover transform group-hover:scale-105 transition-transform duration-700" />
+                  </div>
+                ))}
+                {currentPortfolioImages.length === 0 && (
+                  <div className="w-full text-center text-gray-500 py-12">
+                    Aún no hay fotos en esta carpeta.
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="text-center text-gray-500 py-12 border border-white/5 rounded-3xl bg-white/5">
+              El portafolio aún no tiene carpetas configuradas.
+            </div>
+          )}
         </div>
       </section>
 

@@ -6,7 +6,7 @@ import { uploadFile, generateSecureDownloadUrl, deleteFilesBatch } from '../serv
 
 export const createStoreItem = async (req: Request, res: Response) => {
   try {
-    const { title, description, price } = req.body;
+    const { title, description, price, category } = req.body;
     const file = req.file;
 
     if (!file) {
@@ -32,6 +32,7 @@ export const createStoreItem = async (req: Request, res: Response) => {
         title,
         description,
         price: parseFloat(price),
+        category: category || 'General',
         thumbnail_url: thumbnailKey,
         high_res_key: highResKey,
         is_active: true
@@ -82,16 +83,18 @@ export const getStoreItems = async (req: Request, res: Response) => {
 export const updateStoreItem = async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
-    const { title, description, price, is_active } = req.body;
+    const { title, description, price, is_active, category } = req.body;
+
+    const dataToUpdate: any = {};
+    if (title) dataToUpdate.title = title;
+    if (description) dataToUpdate.description = description;
+    if (price) dataToUpdate.price = parseFloat(price);
+    if (category) dataToUpdate.category = category;
+    if (is_active !== undefined) dataToUpdate.is_active = is_active === 'true';
 
     const item = await prisma.storeItem.update({
       where: { id: parseInt(id) },
-      data: {
-        title,
-        description,
-        price: price ? parseFloat(price) : undefined,
-        is_active: is_active !== undefined ? is_active : undefined
-      }
+      data: dataToUpdate
     });
 
     res.status(200).json({ item });

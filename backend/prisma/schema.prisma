@@ -125,6 +125,7 @@ model LandingSettings {
   
   // Portafolio (Manual)
   portfolio_images    String[]
+  portfolio_folders   Json?    @default("[]")
   portfolio_title     String   @default("Mis Mejores Trabajos")
   portfolio_description String @default("Una selección de mis capturas favoritas. Cada imagen es un testimonio de la dedicación y el amor por el arte fotográfico.")
   
@@ -151,6 +152,7 @@ model StoreItem {
   title           String
   description     String   @db.Text
   price           Decimal
+  category        String   @default("General")
   thumbnail_url   String
   high_res_key    String
   is_active       Boolean  @default(true)

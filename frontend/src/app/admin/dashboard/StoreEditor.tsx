@@ -10,6 +10,7 @@ interface StoreItem {
   price: string;
   thumbnail_url: string;
   is_active: boolean;
+  category: string;
 }
 
 export default function StoreEditor() {
@@ -21,6 +22,7 @@ export default function StoreEditor() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('10.00');
+  const [category, setCategory] = useState('General');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -30,6 +32,7 @@ export default function StoreEditor() {
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editPrice, setEditPrice] = useState('');
+  const [editCategory, setEditCategory] = useState('General');
 
   useEffect(() => {
     fetchItems();
@@ -79,6 +82,7 @@ export default function StoreEditor() {
       formData.append('title', title);
       formData.append('description', description);
       formData.append('price', price);
+      formData.append('category', category);
 
       const res = await fetch(`${API_URL}/api/store`, {
         method: 'POST',
@@ -92,6 +96,7 @@ export default function StoreEditor() {
         setTitle('');
         setDescription('');
         setPrice('10.00');
+        setCategory('General');
         setSelectedFile(null);
       } else {
         toast.error('Error al subir foto', { id: toastId });
@@ -147,6 +152,7 @@ export default function StoreEditor() {
     setEditTitle(item.title);
     setEditDescription(item.description);
     setEditPrice(item.price);
+    setEditCategory(item.category || 'General');
   };
 
   const saveEdit = async () => {
@@ -162,7 +168,8 @@ export default function StoreEditor() {
         body: JSON.stringify({
           title: editTitle,
           description: editDescription,
-          price: editPrice
+          price: editPrice,
+          category: editCategory
         })
       });
       if (res.ok) {
@@ -185,26 +192,34 @@ export default function StoreEditor() {
         
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-4">
-            <div>
-              <label className="text-sm text-gray-400 block mb-1">Título de la Fotografía</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input 
                 type="text" 
+                placeholder="Título del producto" 
+                className="bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-3"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                placeholder="Ej: Atardecer en la Playa"
-                className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-white"
               />
-            </div>
-            <div>
-              <label className="text-sm text-gray-400 block mb-1">Precio ($)</label>
               <input 
                 type="number" 
-                step="0.01"
+                placeholder="Precio (MXN)" 
+                className="bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-3"
                 value={price}
                 onChange={e => setPrice(e.target.value)}
-                className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-white"
               />
             </div>
+            
+            <select 
+              className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-3"
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+            >
+              <option value="General">General</option>
+              <option value="Escritorio">Escritorio</option>
+              <option value="Móvil">Móvil</option>
+              <option value="Tablet">Tablet</option>
+            </select>
+
             <div>
               <label className="text-sm text-gray-400 block mb-1">Descripción corta (opcional)</label>
               <textarea 
@@ -317,15 +332,29 @@ export default function StoreEditor() {
                   className="w-full bg-[#0a0c1a] border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 focus:outline-none"
                 />
               </div>
-              <div>
-                <label className="text-sm text-gray-400 block mb-1">Precio ($)</label>
-                <input 
-                  type="number" 
-                  step="0.01"
-                  value={editPrice}
-                  onChange={e => setEditPrice(e.target.value)}
-                  className="w-full bg-[#0a0c1a] border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 focus:outline-none"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-zinc-400 text-sm mb-1 block">Precio (MXN)</label>
+                  <input 
+                    type="number" 
+                    className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-3"
+                    value={editPrice}
+                    onChange={e => setEditPrice(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-zinc-400 text-sm mb-1 block">Categoría / Dispositivo</label>
+                  <select 
+                    className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-3"
+                    value={editCategory}
+                    onChange={e => setEditCategory(e.target.value)}
+                  >
+                    <option value="General">General</option>
+                    <option value="Escritorio">Escritorio</option>
+                    <option value="Móvil">Móvil</option>
+                    <option value="Tablet">Tablet</option>
+                  </select>
+                </div>
               </div>
               <div>
                 <label className="text-sm text-gray-400 block mb-1">Descripción</label>

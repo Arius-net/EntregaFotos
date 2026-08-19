@@ -32,9 +32,18 @@ export const getSettings = async (req: Request, res: Response) => {
       );
     }
 
-    if (settings.portfolio_images && settings.portfolio_images.length > 0) {
-      signedSettings.portfolio_images_urls = await Promise.all(
-        settings.portfolio_images.map(key => generateSecureDownloadUrl(key))
+    if (settings.portfolio_folders && Array.isArray(settings.portfolio_folders)) {
+      signedSettings.portfolio_folders = await Promise.all(
+        settings.portfolio_folders.map(async (folder: any) => {
+          if (folder.images && Array.isArray(folder.images)) {
+            folder.images_urls = await Promise.all(
+              folder.images.map((key: string) => generateSecureDownloadUrl(key))
+            );
+          } else {
+            folder.images_urls = [];
+          }
+          return folder;
+        })
       );
     }
 
