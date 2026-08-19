@@ -41,9 +41,8 @@ export default function StoreEditor() {
   const [categoryToRename, setCategoryToRename] = useState<string | null>(null);
   const [renameInput, setRenameInput] = useState('');
 
-  // Extract all categories currently in DB plus default ones
-  const defaultCategories = ['General', 'Escritorio', 'Móvil', 'Tablet'];
-  const allCategories = Array.from(new Set([...defaultCategories, ...items.map(item => item.category || 'General')]));
+  // Extract all categories currently in DB
+  const allCategories = Array.from(new Set(['General', ...items.map(item => item.category || 'General')]));
 
   useEffect(() => {
     fetchItems();
