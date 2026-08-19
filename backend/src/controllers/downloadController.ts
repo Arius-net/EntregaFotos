@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../prismaClient';
 import { generateSecureDownloadUrl, getFileStream } from '../services/storage';
-import archiver from 'archiver';
+const archiver = require('archiver');
 
 export const downloadFreePhotos = async (req: Request, res: Response) => {
   try {
@@ -153,7 +153,7 @@ export const downloadAllFinalPhotos = async (req: Request, res: Response) => {
 // NUEVOS ENDPOINTS PARA DESCARGAR ZIP (usando método GET con ids pasados por query param o todos si no hay ids)
 export const downloadZip = async (req: Request, res: Response) => {
   try {
-    const gallery_id = parseInt(req.params.gallery_id);
+    const gallery_id = parseInt(req.params.gallery_id as string);
     const { ids } = req.query; // e.g. ids=1,2,3
     const client_id = (req as any).user?.id;
 
@@ -198,7 +198,7 @@ export const downloadZip = async (req: Request, res: Response) => {
       photosToDownload = await prisma.photo.findMany({
         where: {
           gallery_id: gallery_id,
-          high_res_key: { not: null }
+          high_res_key: { not: '' }
         }
       });
     }
@@ -216,7 +216,7 @@ export const downloadZip = async (req: Request, res: Response) => {
       archive.abort();
     });
 
-    archive.on('error', (err) => {
+    archive.on('error', (err: any) => {
       throw err;
     });
 
