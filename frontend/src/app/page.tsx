@@ -12,6 +12,7 @@ export default function LandingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activePortfolioFolder, setActivePortfolioFolder] = useState<number>(0);
+  const [activePhotoIndices, setActivePhotoIndices] = useState<Record<number, number>>({});
   const [settings, setSettings] = useState<any>(null);
   const router = useRouter();
 
@@ -168,7 +169,7 @@ export default function LandingPage() {
           </div>
           
           {settings?.portfolio_folders && settings.portfolio_folders.length > 0 ? (
-            <div className="relative h-[600px] w-full flex items-center justify-center overflow-hidden px-4">
+            <div className="relative h-[650px] w-full flex items-center justify-center overflow-hidden px-4">
               {settings.portfolio_folders.map((folder: any, idx: number) => {
                 const offset = idx - activePortfolioFolder;
                 const absOffset = Math.abs(offset);
@@ -196,45 +197,72 @@ export default function LandingPage() {
                       filter: isActive ? 'none' : `blur(${absOffset * 2}px)`
                     }}
                   >
+                    {/* Título de la Carpeta */}
+                    <div className={`mb-8 transition-all duration-500 z-40 ${isActive ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0'}`}>
+                      <h4 className="text-2xl font-bold text-white bg-black/50 backdrop-blur-md px-6 py-2 rounded-full border border-white/10">
+                        {folder.name}
+                      </h4>
+                    </div>
+
                     {/* Stack de Fotos */}
                     <div className="relative w-[75vw] max-w-[320px] aspect-[4/5] md:max-w-[400px]">
                       {folder.images_urls && folder.images_urls.length > 0 ? (
                         <>
-                          {/* Foto Inferior (Índice 2) */}
-                          {folder.images_urls[2] && (
-                            <img 
-                              src={folder.images_urls[2]} 
-                              alt="Fondo 2" 
-                              className="absolute inset-0 w-full h-full object-cover rounded-2xl border-2 border-white/20 shadow-2xl rotate-6 translate-x-4 opacity-70 transition-transform duration-500 group-hover:rotate-12"
-                            />
-                          )}
-                          {/* Foto Intermedia (Índice 1) */}
-                          {folder.images_urls[1] && (
-                            <img 
-                              src={folder.images_urls[1]} 
-                              alt="Fondo 1" 
-                              className="absolute inset-0 w-full h-full object-cover rounded-2xl border-2 border-white/30 shadow-2xl -rotate-6 -translate-x-4 opacity-90 transition-transform duration-500 group-hover:-rotate-12"
-                            />
-                          )}
-                          {/* Foto Superior (Índice 0) */}
-                          <img 
-                            src={folder.images_urls[0]} 
-                            alt={folder.name} 
-                            className="relative z-10 w-full h-full object-cover rounded-2xl border-2 border-white/40 shadow-2xl transition-transform duration-500 hover:scale-[1.02]"
-                          />
+                          {(() => {
+                            const totalImages = folder.images_urls.length;
+                            const topIndex = activePhotoIndices[idx] || 0;
+                            const midIndex = (topIndex + 1) % totalImages;
+                            const botIndex = (topIndex + 2) % totalImages;
+
+                            const handlePhotoClick = (e: React.MouseEvent) => {
+                              if (isActive) {
+                                e.stopPropagation();
+                                setActivePhotoIndices(prev => ({
+                                  ...prev,
+                                  [idx]: (topIndex + 1) % totalImages
+                                }));
+                              }
+                            };
+
+                            return (
+                              <>
+                                {/* Foto Inferior */}
+                                {totalImages > 2 && (
+                                  <img 
+                                    src={folder.images_urls[botIndex]} 
+                                    alt="Fondo 3" 
+                                    className="absolute inset-0 w-full h-full object-cover rounded-2xl border-2 border-white/20 shadow-2xl rotate-6 translate-x-4 opacity-70 transition-all duration-500 group-hover:rotate-12"
+                                  />
+                                )}
+                                {/* Foto Intermedia */}
+                                {totalImages > 1 && (
+                                  <img 
+                                    src={folder.images_urls[midIndex]} 
+                                    alt="Fondo 2" 
+                                    className="absolute inset-0 w-full h-full object-cover rounded-2xl border-2 border-white/30 shadow-2xl -rotate-6 -translate-x-4 opacity-90 transition-all duration-500 group-hover:-rotate-12"
+                                  />
+                                )}
+                                {/* Foto Superior */}
+                                <img 
+                                  src={folder.images_urls[topIndex]} 
+                                  alt={folder.name} 
+                                  onClick={handlePhotoClick}
+                                  className="relative z-10 w-full h-full object-cover rounded-2xl border-2 border-white/40 shadow-2xl transition-all duration-500 hover:scale-[1.02] cursor-pointer"
+                                />
+                                {isActive && totalImages > 1 && (
+                                  <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur text-white text-xs px-3 py-1 rounded-full z-20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                                    Clic para ver más
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
                         </>
                       ) : (
                         <div className="w-full h-full bg-zinc-900 border-2 border-white/10 rounded-2xl flex items-center justify-center shadow-2xl">
                           <span className="text-zinc-600">Carpeta Vacía</span>
                         </div>
                       )}
-                    </div>
-
-                    {/* Título de la Carpeta */}
-                    <div className={`mt-8 transition-all duration-500 ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-                      <h4 className="text-2xl font-bold text-white bg-black/50 backdrop-blur-md px-6 py-2 rounded-full border border-white/10">
-                        {folder.name}
-                      </h4>
                     </div>
                   </div>
                 );
