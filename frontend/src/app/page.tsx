@@ -219,14 +219,14 @@ export default function LandingPage() {
                     }}
                   >
                     {/* Título de la Carpeta */}
-                    <div className={`mb-8 transition-all duration-500 z-40 ${isActive ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0'}`}>
-                      <h4 className="text-2xl font-bold text-white bg-black/50 backdrop-blur-md px-6 py-2 rounded-full border border-white/10">
+                    <div className={`mb-8 transition-all duration-500 z-40 ${isActive ? 'translate-y-0 opacity-100 scale-100' : '-translate-y-4 opacity-70 scale-90'}`}>
+                      <h4 className="text-xl md:text-2xl font-bold text-white bg-black/50 backdrop-blur-md px-6 py-2 rounded-full border border-white/10">
                         {folder.name}
                       </h4>
                     </div>
 
                     {/* Stack de Fotos */}
-                    <div className="relative w-[75vw] max-w-[320px] aspect-[4/5] md:max-w-[400px]">
+                    <div className="relative max-w-[85vw] md:max-w-[450px] max-h-[60vh] flex items-center justify-center">
                       {folder.images_urls && folder.images_urls.length > 0 ? (
                         <>
                           {(() => {
@@ -268,7 +268,7 @@ export default function LandingPage() {
                                   src={folder.images_urls[topIndex]} 
                                   alt={folder.name} 
                                   onClick={handlePhotoClick}
-                                  className="relative z-10 w-full h-full object-cover rounded-2xl border-2 border-white/40 shadow-2xl transition-all duration-500 hover:scale-[1.02] cursor-pointer"
+                                  className="relative z-10 max-w-full max-h-[60vh] w-auto h-auto rounded-2xl border-2 border-white/40 shadow-2xl transition-all duration-500 hover:scale-[1.02] cursor-pointer object-cover"
                                 />
                                 {isActive && totalImages > 1 && (
                                   <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur text-white text-xs px-3 py-1 rounded-full z-20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">

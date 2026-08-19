@@ -95,7 +95,7 @@ export const getStoreItems = async (req: Request, res: Response) => {
     }
     
     const items = await prisma.storeItem.findMany({
-      where: isAdmin ? undefined : { is_active: true },
+      where: isAdmin ? { is_deleted: false } : { is_active: true, is_deleted: false },
       orderBy: { created_at: 'desc' }
     });
 
@@ -145,10 +145,11 @@ export const deleteStoreItem = async (req: Request, res: Response) => {
     const item = await prisma.storeItem.findUnique({ where: { id: parseInt(id) } });
     if (!item) return res.status(404).json({ error: 'Item not found' });
 
-    // Borrar de R2
-    await deleteFilesBatch([item.high_res_key, item.thumbnail_url]);
-
-    await prisma.storeItem.delete({ where: { id: parseInt(id) } });
+    // Soft delete to preserve order history and R2 files for previous buyers
+    await prisma.storeItem.update({ 
+      where: { id: parseInt(id) },
+      data: { is_deleted: true, is_active: false }
+    });
 
     res.status(200).json({ message: 'Store item deleted successfully' });
   } catch (error) {
@@ -259,6 +260,15 @@ export const createOrder = async (req: Request, res: Response) => {
 
     // 2. Crear Checkout con Clip
     const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+    if (Number(total_amount) === 0) {
+      await prisma.storeOrder.update({
+        where: { id: order.id },
+        data: { status: 'PAID', payment_id: 'FREE_ORDER' }
+      });
+      return res.status(201).json({ init_point: `${FRONTEND_URL}/store/success?order=${order.id}` });
+    }
+
     const authHeader = getClipAuthHeader();
 
     const payload = {
