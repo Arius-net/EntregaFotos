@@ -132,13 +132,20 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
       if (res.ok) {
         toast.success('Descarga iniciada de fotos desbloqueadas', { id: toastId });
         
-        for (const item of data.urls) {
+        // Descarga secuencial para evitar bloqueo de navegador
+        for (let i = 0; i < data.urls.length; i++) {
+          const item = data.urls[i];
           const a = document.createElement('a');
           a.href = item.url;
           a.download = `photo_${item.photoId}.jpg`;
+          a.target = '_blank';
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
+          
+          if (i < data.urls.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
         }
 
         // Limpiamos selección tras descargar para evitar confusión
@@ -200,13 +207,20 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
         const data = await res.json();
         toast.success('Iniciando descargas múltiples...', { id: toastId });
         
-        for (const item of data.urls) {
+        // Descarga secuencial
+        for (let i = 0; i < data.urls.length; i++) {
+          const item = data.urls[i];
           const a = document.createElement('a');
           a.href = item.url;
           a.download = `photo_${item.photoId}.jpg`;
+          a.target = '_blank';
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
+          
+          if (i < data.urls.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
         }
       } else {
         toast.error('Error al obtener URLs de descarga', { id: toastId });

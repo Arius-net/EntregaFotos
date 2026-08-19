@@ -168,38 +168,98 @@ export default function LandingPage() {
           </div>
           
           {settings?.portfolio_folders && settings.portfolio_folders.length > 0 ? (
-            <>
-              {/* Folder Tabs */}
-              <div className="flex justify-center gap-4 mb-12 flex-wrap">
-                {settings.portfolio_folders.map((folder: any, idx: number) => (
-                  <button
+            <div className="relative h-[600px] w-full flex items-center justify-center overflow-hidden px-4">
+              {settings.portfolio_folders.map((folder: any, idx: number) => {
+                const offset = idx - activePortfolioFolder;
+                const absOffset = Math.abs(offset);
+                
+                // Si está muy lejos, lo ocultamos para mejor rendimiento y estética
+                if (absOffset > 2) return null;
+
+                const isActive = offset === 0;
+                
+                // Calculamos transformaciones basadas en la distancia al centro
+                const translateX = offset * 60; // porcentaje
+                const scale = 1 - absOffset * 0.15;
+                const zIndex = 30 - absOffset;
+                const opacity = isActive ? 1 : Math.max(0.3, 1 - absOffset * 0.4);
+
+                return (
+                  <div 
                     key={idx}
                     onClick={() => setActivePortfolioFolder(idx)}
-                    className={`px-6 py-2 rounded-full font-medium transition-all ${
-                      activePortfolioFolder === idx 
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
-                        : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white border border-white/5'
-                    }`}
+                    className="absolute top-1/2 left-1/2 transition-all duration-700 ease-in-out cursor-pointer flex flex-col items-center"
+                    style={{
+                      transform: `translate(-50%, -50%) translateX(${translateX}%) scale(${scale})`,
+                      zIndex,
+                      opacity,
+                      filter: isActive ? 'none' : `blur(${absOffset * 2}px)`
+                    }}
                   >
-                    {folder.name}
-                  </button>
-                ))}
-              </div>
+                    {/* Stack de Fotos */}
+                    <div className="relative w-[75vw] max-w-[320px] aspect-[4/5] md:max-w-[400px]">
+                      {folder.images_urls && folder.images_urls.length > 0 ? (
+                        <>
+                          {/* Foto Inferior (Índice 2) */}
+                          {folder.images_urls[2] && (
+                            <img 
+                              src={folder.images_urls[2]} 
+                              alt="Fondo 2" 
+                              className="absolute inset-0 w-full h-full object-cover rounded-2xl border-2 border-white/20 shadow-2xl rotate-6 translate-x-4 opacity-70 transition-transform duration-500 group-hover:rotate-12"
+                            />
+                          )}
+                          {/* Foto Intermedia (Índice 1) */}
+                          {folder.images_urls[1] && (
+                            <img 
+                              src={folder.images_urls[1]} 
+                              alt="Fondo 1" 
+                              className="absolute inset-0 w-full h-full object-cover rounded-2xl border-2 border-white/30 shadow-2xl -rotate-6 -translate-x-4 opacity-90 transition-transform duration-500 group-hover:-rotate-12"
+                            />
+                          )}
+                          {/* Foto Superior (Índice 0) */}
+                          <img 
+                            src={folder.images_urls[0]} 
+                            alt={folder.name} 
+                            className="relative z-10 w-full h-full object-cover rounded-2xl border-2 border-white/40 shadow-2xl transition-transform duration-500 hover:scale-[1.02]"
+                          />
+                        </>
+                      ) : (
+                        <div className="w-full h-full bg-zinc-900 border-2 border-white/10 rounded-2xl flex items-center justify-center shadow-2xl">
+                          <span className="text-zinc-600">Carpeta Vacía</span>
+                        </div>
+                      )}
+                    </div>
 
-              {/* Photos Carousel */}
-              <div className="flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory hide-scrollbar">
-                {currentPortfolioImages.map((img: string, idx: number) => (
-                  <div key={idx} className="relative group overflow-hidden rounded-2xl shrink-0 w-[85vw] sm:w-[400px] snap-center shadow-lg border border-white/10">
-                    <img src={img} alt={`Portafolio ${idx + 1}`} className="w-full h-[300px] sm:h-[450px] object-cover transform group-hover:scale-105 transition-transform duration-700" />
+                    {/* Título de la Carpeta */}
+                    <div className={`mt-8 transition-all duration-500 ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+                      <h4 className="text-2xl font-bold text-white bg-black/50 backdrop-blur-md px-6 py-2 rounded-full border border-white/10">
+                        {folder.name}
+                      </h4>
+                    </div>
                   </div>
-                ))}
-                {currentPortfolioImages.length === 0 && (
-                  <div className="w-full text-center text-gray-500 py-12">
-                    Aún no hay fotos en esta carpeta.
-                  </div>
-                )}
-              </div>
-            </>
+                );
+              })}
+              
+              {/* Controles de Navegación (si hay más de 1) */}
+              {settings.portfolio_folders.length > 1 && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-4 z-40">
+                  <button 
+                    onClick={() => setActivePortfolioFolder(prev => Math.max(0, prev - 1))}
+                    disabled={activePortfolioFolder === 0}
+                    className="p-3 rounded-full bg-white/10 hover:bg-white/20 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors border border-white/10"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                  </button>
+                  <button 
+                    onClick={() => setActivePortfolioFolder(prev => Math.min(settings.portfolio_folders.length - 1, prev + 1))}
+                    disabled={activePortfolioFolder === settings.portfolio_folders.length - 1}
+                    className="p-3 rounded-full bg-white/10 hover:bg-white/20 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors border border-white/10"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="text-center text-gray-500 py-12 border border-white/5 rounded-3xl bg-white/5">
               El portafolio aún no tiene carpetas configuradas.
