@@ -213,11 +213,16 @@ export const downloadZip = async (req: Request, res: Response) => {
     
     // Si la conexión se cierra temprano
     req.on('close', () => {
-      archive.abort();
+      try { archive.abort(); } catch(e) {}
     });
 
     archive.on('error', (err: any) => {
-      throw err;
+      console.error('Archiver error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Error al generar el ZIP' });
+      } else {
+        res.end();
+      }
     });
 
     archive.pipe(res);
