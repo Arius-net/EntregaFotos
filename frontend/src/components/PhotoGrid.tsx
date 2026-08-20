@@ -132,24 +132,30 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
       if (res.ok) {
         toast.success('Descarga iniciada de fotos desbloqueadas', { id: toastId });
         
-        // Descarga secuencial usando iframes ocultos para evitar el bloqueo estricto del navegador
+        // Sequentially download using fetch and anchor tags
         for (let i = 0; i < data.urls.length; i++) {
           const item = data.urls[i];
-          
-          const iframe = document.createElement('iframe');
-          iframe.style.display = 'none';
-          iframe.src = item.url;
-          document.body.appendChild(iframe);
-          
-          // Removemos el iframe después de un tiempo razonable para no saturar el DOM
-          setTimeout(() => {
-            if (document.body.contains(iframe)) {
-              document.body.removeChild(iframe);
+          try {
+            const response = await fetch(item.url);
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = blobUrl;
+            a.download = `EntregaFotos_${i + 1}.jpg`;
+            document.body.appendChild(a);
+            a.click();
+            
+            setTimeout(() => {
+              document.body.removeChild(a);
+              window.URL.revokeObjectURL(blobUrl);
+            }, 1000);
+            
+            if (i < data.urls.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
             }
-          }, 10000);
-          
-          if (i < data.urls.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5s entre descargas
+          } catch (err) {
+            console.error('Error descargando imagen:', err);
           }
         }
 
@@ -212,23 +218,30 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
         const data = await res.json();
         toast.success('Iniciando descargas múltiples...', { id: toastId });
         
-        // Descarga secuencial con iframes
+        // Descarga secuencial
         for (let i = 0; i < data.urls.length; i++) {
           const item = data.urls[i];
-          
-          const iframe = document.createElement('iframe');
-          iframe.style.display = 'none';
-          iframe.src = item.url;
-          document.body.appendChild(iframe);
-          
-          setTimeout(() => {
-            if (document.body.contains(iframe)) {
-              document.body.removeChild(iframe);
+          try {
+            const response = await fetch(item.url);
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = blobUrl;
+            a.download = `EntregaFotos_${i + 1}.jpg`;
+            document.body.appendChild(a);
+            a.click();
+            
+            setTimeout(() => {
+              document.body.removeChild(a);
+              window.URL.revokeObjectURL(blobUrl);
+            }, 1000);
+            
+            if (i < data.urls.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
             }
-          }, 10000);
-          
-          if (i < data.urls.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 1500));
+          } catch (err) {
+            console.error('Error descargando imagen:', err);
           }
         }
       } else {
