@@ -37,6 +37,7 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 50;
+  const [showZipInfo, setShowZipInfo] = useState(true);
 
   // Reseteamos a página 1 si cambian de carpeta
   useEffect(() => {
@@ -328,6 +329,37 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
         </div>
       )}
 
+      {/* Instrucciones de Descarga ZIP */}
+      {showZipInfo && (
+        <div className="mb-6 relative bg-blue-900/20 border border-blue-500/30 rounded-2xl p-4 shadow-lg backdrop-blur-sm flex flex-col sm:flex-row items-start sm:items-center gap-4 animate-fade-in">
+          <button 
+            onClick={() => setShowZipInfo(false)}
+            className="absolute top-2 right-2 text-blue-300/50 hover:text-white bg-blue-500/10 hover:bg-blue-500/30 rounded-full p-1.5 transition-colors"
+          >
+            <X size={16} />
+          </button>
+          
+          <div className="bg-blue-500/20 p-3 rounded-full flex-shrink-0 text-blue-400">
+            ℹ️
+          </div>
+          
+          <div className="flex-1 text-sm text-blue-100/90 leading-relaxed">
+            <strong className="text-blue-300 text-base mb-1 block">¿Vas a descargar un ZIP?</strong>
+            <p className="mb-1">
+              📱 <span className="opacity-80">Si estás en celular, tu ZIP se guardará en tu app oficial de </span>
+              <strong className="text-white">Archivos</strong> 
+              <span className="opacity-80"> (Files). Solo búscalo ahí y tócalo para que se descomprima en una carpeta con todas tus fotos.</span>
+            </p>
+            <p>
+              💻 <span className="opacity-80">Si estás en PC, encuéntralo en tu carpeta de </span>
+              <strong className="text-white">Descargas</strong>
+              <span className="opacity-80">, dale clic derecho y elige "Extraer Todo".</span>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Grid de Fotos */}
       <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4 pb-12">
         {currentPhotos.map((photo, index) => {
           const isSelected = selectedIds.has(photo.id);
@@ -447,12 +479,6 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
                   📦 Descargar en ZIP
                 </button>
               </div>
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mt-2 text-left">
-                <p className="text-[11px] text-gray-300 leading-snug">
-                  <strong className="text-blue-400">📱 En celular:</strong> El ZIP se guardará en tu app de "Archivos" (Files). Para abrirlo, simplemente entra a la app y tócalo; se creará una carpeta con tus fotos.<br/>
-                  <strong className="text-blue-400 mt-1 block">💻 En PC:</strong> Busca el ZIP en "Descargas", dale clic derecho y elige "Extraer todo".
-                </p>
-              </div>
             </div>
           </div>
         ) : (
@@ -501,12 +527,6 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
                     >
                       {isProcessing ? 'Procesando...' : '📦 Descargar en ZIP'}
                     </button>
-                  </div>
-                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mt-2 text-left">
-                    <p className="text-[11px] text-gray-300 leading-snug">
-                      <strong className="text-blue-400">📱 En celular:</strong> El ZIP se guardará en tu app de "Archivos" (Files). Para abrirlo, simplemente entra a la app y tócalo; se creará una carpeta con tus fotos.<br/>
-                      <strong className="text-blue-400 mt-1 block">💻 En PC:</strong> Busca el ZIP en "Descargas", dale clic derecho y elige "Extraer todo".
-                    </p>
                   </div>
                 </div>
               ) : !isOverLimit ? (
