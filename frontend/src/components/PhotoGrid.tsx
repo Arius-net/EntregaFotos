@@ -447,10 +447,12 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
                   📦 Descargar en ZIP
                 </button>
               </div>
-              <p className="text-[10px] text-gray-400 text-center leading-tight">
-                📱 En celular: El ZIP se guardará en tu app de "Archivos".<br/>
-                💻 En PC: Busca el ZIP en tu carpeta de "Descargas".
-              </p>
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mt-2 text-left">
+                <p className="text-[11px] text-gray-300 leading-snug">
+                  <strong className="text-blue-400">📱 En celular:</strong> El ZIP se guardará en tu app de "Archivos" (Files). Para abrirlo, simplemente entra a la app y tócalo; se creará una carpeta con tus fotos.<br/>
+                  <strong className="text-blue-400 mt-1 block">💻 En PC:</strong> Busca el ZIP en "Descargas", dale clic derecho y elige "Extraer todo".
+                </p>
+              </div>
             </div>
           </div>
         ) : (
@@ -500,10 +502,12 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
                       {isProcessing ? 'Procesando...' : '📦 Descargar en ZIP'}
                     </button>
                   </div>
-                  <p className="text-[10px] text-gray-400 text-center leading-tight">
-                    📱 En celular: El ZIP se guardará en tu app de "Archivos".<br/>
-                    💻 En PC: Busca el ZIP en tu carpeta de "Descargas".
-                  </p>
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mt-2 text-left">
+                    <p className="text-[11px] text-gray-300 leading-snug">
+                      <strong className="text-blue-400">📱 En celular:</strong> El ZIP se guardará en tu app de "Archivos" (Files). Para abrirlo, simplemente entra a la app y tócalo; se creará una carpeta con tus fotos.<br/>
+                      <strong className="text-blue-400 mt-1 block">💻 En PC:</strong> Busca el ZIP en "Descargas", dale clic derecho y elige "Extraer todo".
+                    </p>
+                  </div>
                 </div>
               ) : !isOverLimit ? (
                 <button
