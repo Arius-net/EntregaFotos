@@ -375,16 +375,10 @@ export default function StorePage() {
                     className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700 bg-gray-900" 
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
                     <h3 className="font-semibold text-lg text-white truncate">{item.title}</h3>
                     <div className="flex justify-between items-center mt-1">
                       <span className="text-amber-400 font-bold">${item.price}</span>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); addToCart(item); }}
-                        className="bg-white text-black px-3 py-1 rounded-full text-xs font-bold hover:scale-105 transition-transform"
-                      >
-                        Añadir
-                      </button>
                     </div>
                   </div>
                 </div>
