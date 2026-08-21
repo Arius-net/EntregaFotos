@@ -424,11 +424,11 @@ export default function StorePage() {
           </button>
           
           <div 
-            className="flex flex-col md:flex-row w-full max-w-7xl max-h-[90vh] gap-8"
+            className="flex flex-col md:flex-row w-full max-w-7xl max-h-[90vh] md:max-h-[85vh] gap-4 md:gap-8 overflow-y-auto md:overflow-visible"
             onClick={e => e.stopPropagation()}
           >
             {/* Contenedor del Mockup */}
-            <div className="flex-1 flex flex-col items-center justify-center min-h-[50vh] relative">
+            <div className="flex-1 flex flex-col items-center justify-center min-h-[40vh] md:min-h-[50vh] relative pt-12 md:pt-0">
               {/* Controles de Vista */}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white/10 p-1.5 rounded-full backdrop-blur-md z-20">
                 <button 
@@ -459,21 +459,21 @@ export default function StorePage() {
                 <img 
                   src={selectedImage.thumbnail_url} 
                   alt={selectedImage.title} 
-                  className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-2xl mt-12"
+                  className="max-w-full max-h-[50vh] md:max-h-[70vh] object-contain rounded-xl shadow-2xl mt-4 md:mt-12"
                 />
               )}
 
               {previewMode === 'mobile' && (
-                <div className="relative mt-12 w-[280px] sm:w-[320px] h-[550px] sm:h-[650px] bg-black rounded-[40px] sm:rounded-[50px] border-[6px] sm:border-[8px] border-[#1a1a1a] shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex items-center justify-center ring-1 ring-white/10">
+                <div className="relative mt-4 md:mt-12 w-[180px] sm:w-[320px] h-[360px] sm:h-[650px] bg-black rounded-[25px] sm:rounded-[50px] border-[4px] sm:border-[8px] border-[#1a1a1a] shadow-xl overflow-hidden flex-shrink-0 flex items-center justify-center ring-1 ring-white/10">
                   {/* Dynamic Island */}
-                  <div className="absolute top-3 left-1/2 -translate-x-1/2 w-24 h-7 bg-black rounded-full z-10"></div>
+                  <div className="absolute top-2 sm:top-3 left-1/2 -translate-x-1/2 w-16 sm:w-24 h-4 sm:h-7 bg-black rounded-full z-10"></div>
                   {/* Pantalla */}
                   <img src={selectedImage.thumbnail_url} className="w-full h-full object-cover" />
                 </div>
               )}
 
               {previewMode === 'desktop' && (
-                <div className="relative mt-12 w-full max-w-[800px] aspect-video bg-black rounded-t-xl border-[8px] sm:border-[12px] border-[#1a1a1a] border-b-[20px] sm:border-b-[24px] shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden ring-1 ring-white/10 flex items-center justify-center">
+                <div className="relative mt-4 md:mt-12 w-full max-w-[800px] aspect-video bg-black rounded-t-xl border-[8px] sm:border-[12px] border-[#1a1a1a] border-b-[20px] sm:border-b-[24px] shadow-xl overflow-hidden ring-1 ring-white/10 flex items-center justify-center">
                   <img src={selectedImage.thumbnail_url} className="w-full h-full object-cover" />
                   {/* Soporte Monitor */}
                   <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full w-24 sm:w-32 h-6 sm:h-8 bg-[#1a1a1a]"></div>
@@ -483,7 +483,7 @@ export default function StorePage() {
             </div>
             
             {/* Detalles de Compra */}
-            <div className="w-full md:w-[400px] bg-[#111322]/80 backdrop-blur-xl p-8 rounded-3xl border border-white/10 flex flex-col shadow-2xl h-fit max-h-[80vh] overflow-y-auto">
+            <div className="w-full md:w-[400px] bg-[#111322]/90 backdrop-blur-xl p-5 md:p-8 rounded-3xl border border-white/10 flex flex-col shadow-2xl h-fit md:max-h-[80vh]">
               <h2 className="text-3xl font-bold mb-2">{selectedImage.title}</h2>
               <p className="text-4xl font-light text-[#ff6600] mb-6">${selectedImage.price} <span className="text-sm text-gray-500">MXN</span></p>
               
