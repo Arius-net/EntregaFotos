@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Camera, ShoppingCart, X, Plus, Minus, Trash2, ArrowLeft } from 'lucide-react';
+import { Camera, ShoppingCart, X, Plus, Minus, Trash2, ArrowLeft, Expand, Smartphone, Monitor } from 'lucide-react';
 import Link from 'next/link';
 
 interface StoreItem {
@@ -37,6 +37,7 @@ export default function StorePage() {
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
   const [myOrders, setMyOrders] = useState<any[]>([]);
   const [whatsappNumber, setWhatsappNumber] = useState('521234567890');
+  const [previewMode, setPreviewMode] = useState<'normal' | 'mobile' | 'desktop'>('normal');
 
   // Auth State
   const [isLogin, setIsLogin] = useState(true);
@@ -262,6 +263,19 @@ export default function StorePage() {
   const nextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
   const prevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
 
+  // Auto-detect device for preview mockup when opening an image
+  useEffect(() => {
+    if (selectedImage) {
+      if (window.innerWidth < 768) {
+        setPreviewMode('mobile');
+      } else {
+        setPreviewMode('desktop');
+      }
+    } else {
+      setPreviewMode('normal');
+    }
+  }, [selectedImage]);
+
   // Reset page when category changes
   useEffect(() => {
     setCurrentPage(1);
@@ -404,37 +418,85 @@ export default function StorePage() {
 
       {/* IMAGE PREVIEW MODAL */}
       {selectedImage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/90 backdrop-blur-sm" onClick={() => setSelectedImage(null)}>
-          <button className="absolute top-6 right-6 text-white/50 hover:text-white bg-black/50 p-2 rounded-full backdrop-blur-md">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-8 bg-black/95 backdrop-blur-md" onClick={() => setSelectedImage(null)}>
+          <button className="absolute top-6 right-6 text-white/50 hover:text-white bg-white/10 p-2 rounded-full backdrop-blur-md z-10 transition-colors">
             <X size={24} />
           </button>
           
           <div 
-            className="bg-[#111322] rounded-3xl overflow-hidden max-w-5xl w-full flex flex-col md:flex-row shadow-2xl max-h-[90vh]"
+            className="flex flex-col md:flex-row w-full max-w-7xl max-h-[90vh] gap-8"
             onClick={e => e.stopPropagation()}
           >
-            {/* Foto Grande */}
-            <div className="w-full md:w-2/3 bg-black flex items-center justify-center overflow-hidden">
-              <img 
-                src={selectedImage.thumbnail_url} 
-                alt={selectedImage.title} 
-                className="max-w-full max-h-[50vh] md:max-h-[90vh] object-contain"
-              />
-            </div>
-            
-            {/* Detalles */}
-            <div className="w-full md:w-1/3 p-8 flex flex-col overflow-y-auto">
-              <h2 className="text-3xl font-bold mb-2">{selectedImage.title}</h2>
-              <p className="text-3xl font-light text-amber-500 mb-6">${selectedImage.price} <span className="text-sm text-gray-500">MXN</span></p>
-              
-              <div className="prose prose-invert mb-8">
-                <p className="text-gray-300 leading-relaxed">{selectedImage.description || 'Sin descripción adicional.'}</p>
+            {/* Contenedor del Mockup */}
+            <div className="flex-1 flex flex-col items-center justify-center min-h-[50vh] relative">
+              {/* Controles de Vista */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white/10 p-1.5 rounded-full backdrop-blur-md z-20">
+                <button 
+                  onClick={() => setPreviewMode('normal')}
+                  className={`p-2 rounded-full transition-all ${previewMode === 'normal' ? 'bg-white text-black' : 'text-white/70 hover:text-white'}`}
+                  title="Vista Normal"
+                >
+                  <Expand size={16} />
+                </button>
+                <button 
+                  onClick={() => setPreviewMode('mobile')}
+                  className={`p-2 rounded-full transition-all ${previewMode === 'mobile' ? 'bg-white text-black' : 'text-white/70 hover:text-white'}`}
+                  title="Vista en Celular"
+                >
+                  <Smartphone size={16} />
+                </button>
+                <button 
+                  onClick={() => setPreviewMode('desktop')}
+                  className={`p-2 rounded-full transition-all ${previewMode === 'desktop' ? 'bg-white text-black' : 'text-white/70 hover:text-white'}`}
+                  title="Vista en PC"
+                >
+                  <Monitor size={16} />
+                </button>
               </div>
 
-              <div className="mt-auto space-y-4">
+              {/* MOCKUPS */}
+              {previewMode === 'normal' && (
+                <img 
+                  src={selectedImage.thumbnail_url} 
+                  alt={selectedImage.title} 
+                  className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-2xl mt-12"
+                />
+              )}
+
+              {previewMode === 'mobile' && (
+                <div className="relative mt-12 w-[280px] sm:w-[320px] h-[550px] sm:h-[650px] bg-black rounded-[40px] sm:rounded-[50px] border-[6px] sm:border-[8px] border-[#1a1a1a] shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex items-center justify-center ring-1 ring-white/10">
+                  {/* Dynamic Island */}
+                  <div className="absolute top-3 left-1/2 -translate-x-1/2 w-24 h-7 bg-black rounded-full z-10"></div>
+                  {/* Pantalla */}
+                  <img src={selectedImage.thumbnail_url} className="w-full h-full object-cover" />
+                </div>
+              )}
+
+              {previewMode === 'desktop' && (
+                <div className="relative mt-12 w-full max-w-[800px] aspect-video bg-black rounded-t-xl border-[8px] sm:border-[12px] border-[#1a1a1a] border-b-[20px] sm:border-b-[24px] shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden ring-1 ring-white/10 flex items-center justify-center">
+                  <img src={selectedImage.thumbnail_url} className="w-full h-full object-cover" />
+                  {/* Soporte Monitor */}
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full w-24 sm:w-32 h-6 sm:h-8 bg-[#1a1a1a]"></div>
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[calc(100%+24px)] sm:translate-y-[calc(100%+32px)] w-40 sm:w-48 h-2 bg-[#222] rounded-t-full"></div>
+                </div>
+              )}
+            </div>
+            
+            {/* Detalles de Compra */}
+            <div className="w-full md:w-[400px] bg-[#111322]/80 backdrop-blur-xl p-8 rounded-3xl border border-white/10 flex flex-col shadow-2xl h-fit max-h-[80vh] overflow-y-auto">
+              <h2 className="text-3xl font-bold mb-2">{selectedImage.title}</h2>
+              <p className="text-4xl font-light text-[#ff6600] mb-6">${selectedImage.price} <span className="text-sm text-gray-500">MXN</span></p>
+              
+              <div className="prose prose-invert mb-8">
+                <p className="text-gray-300 leading-relaxed text-sm">
+                  {selectedImage.description || 'Fondo de pantalla en alta resolución. Adquiere este diseño exclusivo y aplícalo al instante en tus dispositivos.'}
+                </p>
+              </div>
+
+              <div className="mt-auto pt-6 border-t border-white/10">
                 <button 
                   onClick={() => addToCart(selectedImage)}
-                  className="w-full bg-white text-black font-bold py-4 rounded-xl shadow-lg hover:bg-gray-200 transition-colors flex justify-center items-center gap-2"
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:scale-[1.02] active:scale-95 transition-all flex justify-center items-center gap-2"
                 >
                   <ShoppingCart size={20} />
                   Añadir al Carrito
