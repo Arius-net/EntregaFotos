@@ -131,32 +131,43 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success('Descarga iniciada de fotos desbloqueadas', { id: toastId });
+        toast.success('Descarga iniciada...', { id: toastId });
         
-        // Sequentially download using fetch and anchor tags
-        for (let i = 0; i < data.urls.length; i++) {
-          const item = data.urls[i];
-          try {
-            const response = await fetch(item.url);
-            const blob = await response.blob();
-            const blobUrl = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = blobUrl;
-            a.download = `EntregaFotos_${i + 1}.jpg`;
-            document.body.appendChild(a);
-            a.click();
-            
-            setTimeout(() => {
-              document.body.removeChild(a);
-              window.URL.revokeObjectURL(blobUrl);
-            }, 1000);
-            
-            if (i < data.urls.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 1000));
+        // Si solo es 1 foto, es más seguro y rápido usar window.location (funciona en Safari 100%)
+        if (data.urls.length === 1) {
+          window.location.href = data.urls[0].url;
+        } else {
+          // Detectar Safari para advertirle al usuario
+          const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+          if (isSafari) {
+            toast.error('Safari bloquea múltiples descargas automáticas. Si falla, usa "Descargar en ZIP".', { duration: 6000 });
+          }
+
+          // Descarga secuencial
+          for (let i = 0; i < data.urls.length; i++) {
+            const item = data.urls[i];
+            try {
+              const response = await fetch(item.url);
+              const blob = await response.blob();
+              const blobUrl = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.style.display = 'none';
+              a.href = blobUrl;
+              a.download = `EntregaFotos_${i + 1}.jpg`;
+              document.body.appendChild(a);
+              a.click();
+              
+              setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(blobUrl);
+              }, 1000);
+              
+              if (i < data.urls.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+            } catch (err) {
+              console.error('Error descargando imagen:', err);
             }
-          } catch (err) {
-            console.error('Error descargando imagen:', err);
           }
         }
 
@@ -217,32 +228,41 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
       
       if (res.ok) {
         const data = await res.json();
-        toast.success('Iniciando descargas múltiples...', { id: toastId });
+        toast.success('Iniciando descargas...', { id: toastId });
         
-        // Descarga secuencial
-        for (let i = 0; i < data.urls.length; i++) {
-          const item = data.urls[i];
-          try {
-            const response = await fetch(item.url);
-            const blob = await response.blob();
-            const blobUrl = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = blobUrl;
-            a.download = `EntregaFotos_${i + 1}.jpg`;
-            document.body.appendChild(a);
-            a.click();
-            
-            setTimeout(() => {
-              document.body.removeChild(a);
-              window.URL.revokeObjectURL(blobUrl);
-            }, 1000);
-            
-            if (i < data.urls.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 1000));
+        if (data.urls.length === 1) {
+          window.location.href = data.urls[0].url;
+        } else {
+          const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+          if (isSafari) {
+            toast.error('Safari bloquea múltiples descargas automáticas. Si falla, usa "Descargar en ZIP".', { duration: 6000 });
+          }
+
+          // Descarga secuencial
+          for (let i = 0; i < data.urls.length; i++) {
+            const item = data.urls[i];
+            try {
+              const response = await fetch(item.url);
+              const blob = await response.blob();
+              const blobUrl = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.style.display = 'none';
+              a.href = blobUrl;
+              a.download = `EntregaFotos_${i + 1}.jpg`;
+              document.body.appendChild(a);
+              a.click();
+              
+              setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(blobUrl);
+              }, 1000);
+              
+              if (i < data.urls.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+            } catch (err) {
+              console.error('Error descargando imagen:', err);
             }
-          } catch (err) {
-            console.error('Error descargando imagen:', err);
           }
         }
       } else {
