@@ -143,32 +143,22 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
             toast.error('Safari bloquea múltiples descargas automáticas. Si falla, usa "Descargar en ZIP".', { duration: 6000 });
           }
 
-          // Descarga secuencial
-          for (let i = 0; i < data.urls.length; i++) {
-            const item = data.urls[i];
-            try {
-              const response = await fetch(item.url);
-              const blob = await response.blob();
-              const blobUrl = window.URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.style.display = 'none';
-              a.href = blobUrl;
-              a.download = `EntregaFotos_${i + 1}.jpg`;
-              document.body.appendChild(a);
-              a.click();
+          // Descarga secuencial usando iframes (más seguro para evitar bloqueos de pop-up y no consume RAM)
+          data.urls.forEach((item: any, index: number) => {
+            setTimeout(() => {
+              const iframe = document.createElement('iframe');
+              iframe.style.display = 'none';
+              iframe.src = item.url;
+              document.body.appendChild(iframe);
               
+              // Limpiar el iframe después de un tiempo prudente
               setTimeout(() => {
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(blobUrl);
-              }, 1000);
-              
-              if (i < data.urls.length - 1) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-              }
-            } catch (err) {
-              console.error('Error descargando imagen:', err);
-            }
-          }
+                if (document.body.contains(iframe)) {
+                  document.body.removeChild(iframe);
+                }
+              }, 15000);
+            }, index * 1000); // 1 segundo de separación entre cada descarga
+          });
         }
 
         // Limpiamos selección tras descargar para evitar confusión
@@ -238,32 +228,22 @@ export default function PhotoGrid({ photos, freeLimit, extraPrice, galleryId, cl
             toast.error('Safari bloquea múltiples descargas automáticas. Si falla, usa "Descargar en ZIP".', { duration: 6000 });
           }
 
-          // Descarga secuencial
-          for (let i = 0; i < data.urls.length; i++) {
-            const item = data.urls[i];
-            try {
-              const response = await fetch(item.url);
-              const blob = await response.blob();
-              const blobUrl = window.URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.style.display = 'none';
-              a.href = blobUrl;
-              a.download = `EntregaFotos_${i + 1}.jpg`;
-              document.body.appendChild(a);
-              a.click();
+          // Descarga secuencial usando iframes (más seguro para evitar bloqueos de pop-up y no consume RAM)
+          data.urls.forEach((item: any, index: number) => {
+            setTimeout(() => {
+              const iframe = document.createElement('iframe');
+              iframe.style.display = 'none';
+              iframe.src = item.url;
+              document.body.appendChild(iframe);
               
+              // Limpiar el iframe después de un tiempo prudente
               setTimeout(() => {
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(blobUrl);
-              }, 1000);
-              
-              if (i < data.urls.length - 1) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-              }
-            } catch (err) {
-              console.error('Error descargando imagen:', err);
-            }
-          }
+                if (document.body.contains(iframe)) {
+                  document.body.removeChild(iframe);
+                }
+              }, 15000);
+            }, index * 1000); // 1 segundo de separación entre cada descarga
+          });
         }
       } else {
         toast.error('Error al obtener URLs de descarga', { id: toastId });
