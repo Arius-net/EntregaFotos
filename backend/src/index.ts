@@ -20,6 +20,11 @@ import './cron';
 dotenv.config();
 
 const app = express();
+
+// Trust proxy is required if the app is behind a reverse proxy (e.g. Nginx, Cloudflare, Railway, Render)
+// This fixes the express-rate-limit "ERR_ERL_UNEXPECTED_X_FORWARDED_FOR" error.
+app.set('trust proxy', 1);
+
 const PORT = process.env.PORT || 3001;
 
 // Middlewares
